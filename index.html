@@ -113,6 +113,16 @@
     .hint { font-size: 12px; }
     .ticker-item { font-size: 11px; padding: 0 14px; }
     th, td { padding: 10px 12px; font-size: 13px; }
+    th:first-child, td:first-child {
+      white-space: normal;
+      width: 72px;
+      max-width: 72px;
+      min-width: 72px;
+      font-size: 10px;
+      line-height: 1.25;
+      padding-left: 8px;
+      padding-right: 6px;
+    }
     .dossier-title { font-size: 20px; }
     .card { flex-wrap: wrap; padding: 12px; }
     .card-date { width: auto; }
@@ -308,8 +318,8 @@ function renderSummary() {
       USERS.forEach(u => {
         const val = Number(row[u] || 0);
         let style = "color:var(--border)";
-        if (val >= 3) style = "background:var(--pitch-light);color:#fff";
-        else if (val > 0) style = "background:var(--bg);color:var(--ink)";
+        if (val > 3) style = "background:var(--rose);color:#fff";
+        else if (val > 0) style = "background:var(--pitch-light);color:#fff";
         html += `<td><span class="count-pill" style="${style}">${val}</span></td>`;
       });
       html += `</tr>`;
