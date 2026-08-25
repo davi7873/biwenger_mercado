@@ -85,6 +85,15 @@
   .ticker-item b { color: var(--gold); }
   .ticker-item strong { color: #fff; }
 
+  .nav-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-tab {
+    background: none; border: none; cursor: pointer; white-space: nowrap;
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
+    color: var(--ink-muted); padding: 12px 14px; border-bottom: 2px solid transparent;
+  }
+  .nav-tab.active { color: var(--pitch); border-bottom-color: var(--pitch); }
+  .nav-tab:hover:not(.active) { color: var(--ink); }
+
   .container { max-width: 900px; margin: 0 auto; padding: 24px; }
   .hint { color: var(--ink-muted); font-size: 14px; margin-bottom: 16px; }
 
@@ -164,6 +173,8 @@
   <div class="ticker-track" id="ticker-track"></div>
 </div>
 
+<div class="nav-wrap" id="nav-wrap" style="display:none;"></div>
+
 <div class="container" id="app-root">
   <div class="loading">Cargando datos del mercado...</div>
 </div>
@@ -210,7 +221,14 @@ async function loadAll() {
   try {
     const summary = await fetchCsv("Resumen");
     const fields = summary.meta.fields || [];
-    USERS = fields.filter(f => f && f !== "Semana" && !/^_\d+$/.test(f) && f.trim() !== "");
+    USERS = fields.filter(f => {
+      if (!f) return false;
+      const clean = f.trim();
+      if (clean === "" || clean === "Semana") return false;
+      if (/^_+\d*$/.test(clean)) return false; // columnas fantasma tipo "_1", "_22"
+      if (/^column\s*\d*$/i.test(clean)) return false; // por si acaso, otra variante
+      return true;
+    });
     SUMMARY_ROWS = summary.data;
 
     USER_DATA = {};
@@ -227,6 +245,7 @@ async function loadAll() {
       "Actualizado " + new Date().toLocaleTimeString("es-ES");
 
     renderTicker();
+    renderNav(selectedUser || "__resumen__");
     if (selectedUser) {
       renderDossier(selectedUser);
     } else {
@@ -235,6 +254,17 @@ async function loadAll() {
   } catch (e) {
     root.innerHTML = `<div class="error-box"><b>No se pudieron cargar los datos</b><br>${e.message}</div>`;
   }
+}
+
+function renderNav(activeKey) {
+  const nav = document.getElementById("nav-wrap");
+  if (USERS.length === 0) { nav.style.display = "none"; return; }
+  nav.style.display = "flex";
+  let html = `<button class="nav-tab ${activeKey === "__resumen__" ? "active" : ""}" onclick="renderSummary()">Resumen</button>`;
+  USERS.forEach(u => {
+    html += `<button class="nav-tab ${activeKey === u ? "active" : ""}" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button>`;
+  });
+  nav.innerHTML = html;
 }
 
 function renderTicker() {
@@ -261,6 +291,7 @@ function renderTicker() {
 
 function renderSummary() {
   selectedUser = null;
+  renderNav("__resumen__");
   const root = document.getElementById("app-root");
   let html = `<p class="hint">Compras y clausulas por semana. Pulsa un manager para ver su detalle.</p>`;
   html += `<div class="table-scroll"><table><thead><tr><th class="font-mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-muted)">Semana</th>`;
@@ -290,12 +321,12 @@ function renderSummary() {
 
 function renderDossier(username) {
   selectedUser = username;
+  renderNav(username);
   const rows = (USER_DATA[username] || []).slice()
     .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
 
   const root = document.getElementById("app-root");
-  let html = `<button class="back-btn" onclick="renderSummary()">&larr; Volver al resumen</button>`;
-  html += `<h2 class="font-display dossier-title">${username}</h2>`;
+  let html = `<h2 class="font-display dossier-title">${username}</h2>`;
   html += `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
 
   if (rows.length === 0) {
