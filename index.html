@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mercado Biwenger 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #F5F7F4;
+    --surface: #FFFFFF;
+    --border: #DCE6DE;
+    --ink: #16281D;
+    --ink-muted: #5B7266;
+    --pitch: #1F5C3E;
+    --pitch-light: #2E8B57;
+    --gold: #E3A72E;
+    --gold-bg: #FBF0DA;
+    --gold-text: #7A4E0C;
+    --rose: #C4453B;
+    --rose-bg: #FBEAE8;
+    --rose-text: #7E2C25;
+    --green-bg: #E6F3EB;
+    --green-text: #155C36;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  .font-display { font-family: 'Oswald', 'Arial Narrow', sans-serif; font-weight: 700; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  .masthead {
+    background: var(--pitch);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .masthead h1 { color: #fff; font-size: 20px; margin: 0; letter-spacing: 0.5px; }
+  .masthead p { color: #BFE0CC; font-size: 12px; margin: 4px 0 0; }
+  .refresh-btn {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+
+  .ticker-wrap {
+    background: #0F2E1E;
+    overflow: hidden;
+    padding: 8px 0;
+    white-space: nowrap;
+  }
+  .ticker-track {
+    display: inline-flex;
+    animation: scroll 40s linear infinite;
+  }
+  @keyframes scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    padding: 0 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #DDEFE3;
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .ticker-item b { color: var(--gold); }
+  .ticker-item strong { color: #fff; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+  .hint { color: var(--ink-muted); font-size: 14px; margin-bottom: 16px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  th, td { padding: 12px 16px; text-align: center; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { border-bottom: 1px solid var(--border); }
+  tbody tr:not(:first-child) td { border-top: 1px solid var(--border); }
+  .user-link {
+    background: none; border: none; cursor: pointer;
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 14px;
+    color: var(--pitch);
+  }
+  .user-link:hover { text-decoration: underline; }
+  .count-pill {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+  }
+
+  .back-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-muted); font-size: 14px; font-weight: 500;
+    display: flex; align-items: center; gap: 6px; margin-bottom: 16px;
+  }
+  .dossier-title { font-size: 26px; margin: 0 0 4px; }
+  .dossier-sub { color: var(--ink-muted); font-size: 14px; margin: 0 0 24px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 8px;
+  }
+  .card-left { display: flex; align-items: center; gap: 16px; min-width: 0; }
+  .card-date { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-muted); width: 110px; flex-shrink: 0; }
+  .card-player { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 16px; margin: 0; }
+  .card-vendor { font-size: 12px; color: var(--ink-muted); margin: 2px 0 0; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .error-box {
+    background: var(--rose-bg); color: var(--rose-text); border-radius: 12px;
+    padding: 20px; max-width: 500px; margin: 40px auto; font-size: 14px;
+  }
+  .loading { text-align: center; color: var(--ink-muted); padding: 60px 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div>
+    <h1 class="font-display">MERCADO · BIWENGER 2026</h1>
+    <p id="last-updated"></p>
+  </div>
+  <button class="refresh-btn" onclick="loadAll()">&#8635; Actualizar</button>
+</div>
+
+<div id="ticker-wrap" class="ticker-wrap" style="display:none;">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<div class="container" id="app-root">
+  <div class="loading">Cargando datos del mercado...</div>
+</div>
+
+<script>
+// ============================================================
+// CONFIGURACION: pon aqui el ID de tu Google Sheet
+// ============================================================
+const SHEET_ID = "1ir6uoaIP7nLft8QX9776SuXW1yqGVw_CaUchFMLjdXc";
+
+let USERS = [];
+let SUMMARY_ROWS = [];
+let USER_DATA = {}; // { nombre: filas[] }
+let selectedUser = null;
+
+function sheetCsvUrl(sheetName) {
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+async function fetchCsv(sheetName) {
+  const res = await fetch(sheetCsvUrl(sheetName));
+  const text = await res.text();
+  if (!res.ok || text.trim().toLowerCase().startsWith("<")) {
+    throw new Error(`No se pudo leer la pestana "${sheetName}". Comprueba que la hoja esta compartida como "Cualquiera con el enlace puede ver".`);
+  }
+  return Papa.parse(text, { header: true, skipEmptyLines: true });
+}
+
+function typeBadgeHtml(tipo) {
+  const map = {
+    Compra: { bg: "var(--green-bg)", text: "var(--green-text)", label: "Compra" },
+    Venta: { bg: "var(--rose-bg)", text: "var(--rose-text)", label: "Venta" },
+    Clausula: { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
+  };
+  const conf = map[tipo] || { bg: "#EEE", text: "#555", label: tipo || "-" };
+  return `<span class="badge" style="background:${conf.bg};color:${conf.text}">${conf.label}</span>`;
+}
+
+async function loadAll() {
+  const root = document.getElementById("app-root");
+  root.innerHTML = '<div class="loading">Cargando datos del mercado...</div>';
+  document.getElementById("ticker-wrap").style.display = "none";
+
+  try {
+    const summary = await fetchCsv("Resumen");
+    const fields = summary.meta.fields || [];
+    USERS = fields.filter(f => f && f !== "Semana");
+    SUMMARY_ROWS = summary.data;
+
+    USER_DATA = {};
+    await Promise.all(USERS.map(async (name) => {
+      try {
+        const parsed = await fetchCsv(name);
+        USER_DATA[name] = parsed.data;
+      } catch (e) {
+        USER_DATA[name] = [];
+      }
+    }));
+
+    document.getElementById("last-updated").textContent =
+      "Actualizado " + new Date().toLocaleTimeString("es-ES");
+
+    renderTicker();
+    if (selectedUser) {
+      renderDossier(selectedUser);
+    } else {
+      renderSummary();
+    }
+  } catch (e) {
+    root.innerHTML = `<div class="error-box"><b>No se pudieron cargar los datos</b><br>${e.message}</div>`;
+  }
+}
+
+function renderTicker() {
+  const all = [];
+  Object.entries(USER_DATA).forEach(([name, rows]) => {
+    rows.forEach(r => { if (r && r.Fecha) all.push({ ...r, usuario: name }); });
+  });
+  all.sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
+  const ticker = all.slice(0, 12);
+
+  const wrap = document.getElementById("ticker-wrap");
+  const track = document.getElementById("ticker-track");
+  if (ticker.length === 0) { wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+
+  const itemHtml = (t) => {
+    const accion = t.Tipo === "Venta"
+      ? "vendio a"
+      : (t.Vendedor === "Mercado" ? "compro al mercado" : `compro a ${t.Vendedor}`);
+    return `<span class="ticker-item"><b>${t.usuario}</b><span>${accion}</span><strong>${t.Jugador}</strong></span>`;
+  };
+  track.innerHTML = [...ticker, ...ticker].map(itemHtml).join("");
+}
+
+function renderSummary() {
+  selectedUser = null;
+  const root = document.getElementById("app-root");
+  let html = `<p class="hint">Compras y clausulas por semana. Pulsa un manager para ver su detalle.</p>`;
+  html += `<table><thead><tr><th class="font-mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-muted)">Semana</th>`;
+  USERS.forEach(u => {
+    html += `<th><button class="user-link" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button></th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  if (SUMMARY_ROWS.length === 0) {
+    html += `<tr><td colspan="${USERS.length + 1}" style="color:var(--ink-muted);padding:24px">Todavia no hay movimientos registrados.</td></tr>`;
+  } else {
+    SUMMARY_ROWS.forEach(row => {
+      html += `<tr><td class="font-mono" style="font-size:12px">${row.Semana}</td>`;
+      USERS.forEach(u => {
+        const val = Number(row[u] || 0);
+        let style = "color:var(--border)";
+        if (val >= 3) style = "background:var(--pitch-light);color:#fff";
+        else if (val > 0) style = "background:var(--bg);color:var(--ink)";
+        html += `<td><span class="count-pill" style="${style}">${val}</span></td>`;
+      });
+      html += `</tr>`;
+    });
+  }
+  html += `</tbody></table>`;
+  root.innerHTML = html;
+}
+
+function renderDossier(username) {
+  selectedUser = username;
+  const rows = (USER_DATA[username] || []).slice()
+    .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
+
+  const root = document.getElementById("app-root");
+  let html = `<button class="back-btn" onclick="renderSummary()">&larr; Volver al resumen</button>`;
+  html += `<h2 class="font-display dossier-title">${username}</h2>`;
+  html += `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
+
+  if (rows.length === 0) {
+    html += `<div class="card" style="justify-content:center;color:var(--ink-muted)">Sin movimientos todavia.</div>`;
+  } else {
+    rows.forEach(r => {
+      const vendorLabel = r.Vendedor === "Mercado" ? "Mercado libre" : `Rival: ${r.Vendedor}`;
+      html += `
+        <div class="card">
+          <div class="card-left">
+            <div class="card-date">${r.Fecha}</div>
+            <div>
+              <p class="card-player">${r.Jugador}</p>
+              <p class="card-vendor">${vendorLabel}</p>
+            </div>
+          </div>
+          ${typeBadgeHtml(r.Tipo)}
+        </div>`;
+    });
+  }
+  root.innerHTML = html;
+}
+
+loadAll();
+</script>
+</body>
+</html>
