@@ -244,7 +244,7 @@
 
   .stats-tabs {
     display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
-    margin-bottom: 16px; padding-bottom: 4px;
+    margin-bottom: 16px; padding-bottom: 14px;
   }
   .stats-tab {
     background: var(--surface); border: 1px solid var(--border); cursor: pointer;
@@ -590,17 +590,17 @@ function renderStatsTotal(rows) {
 }
 
 function renderStatsMovimientos(rows) {
-  const counts = {};
-  USERS.forEach(u => { counts[u] = 0; });
+  const compras = {};
+  const ventas = {};
+  USERS.forEach(u => { compras[u] = 0; ventas[u] = 0; });
   rows.forEach(r => {
-    if (r.Tipo === "Compra" || r.Tipo === "Venta") {
-      counts[r.usuario] = (counts[r.usuario] || 0) + 1;
-    }
+    if (r.Tipo === "Compra") compras[r.usuario] = (compras[r.usuario] || 0) + 1;
+    if (r.Tipo === "Venta") ventas[r.usuario] = (ventas[r.usuario] || 0) + 1;
   });
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const sorted = USERS.slice().sort((a, b) => (compras[b] || 0) - (compras[a] || 0));
   return rankingTable(
-    ["Usuario", "Compras + Ventas"],
-    sorted.map(([u, n]) => [u, n])
+    ["Usuario", "Compras", "Ventas"],
+    sorted.map(u => [u, compras[u] || 0, ventas[u] || 0])
   );
 }
 
