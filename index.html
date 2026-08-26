@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Mercado Biwenger 2026</title>
+<title>Muvins Biwenger</title>
 
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#1F5C3E" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Mercado" />
+<meta name="apple-mobile-web-app-title" content="Muvins" />
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
@@ -36,11 +36,18 @@
     --green-text: #155C36;
   }
   * { box-sizing: border-box; }
-  body {
+  html, body {
+    height: 100%;
     margin: 0;
+  }
+  body {
     background: var(--bg);
     color: var(--ink);
     font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
   }
   .font-display { font-family: 'Oswald', 'Arial Narrow', sans-serif; font-weight: 700; }
   .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -51,9 +58,35 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-shrink: 0;
   }
+  .masthead-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .app-logo { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: block; }
+  .title-row { display: flex; align-items: center; gap: 8px; }
   .masthead h1 { color: #fff; font-size: 20px; margin: 0; letter-spacing: 0.5px; }
   .masthead p { color: #BFE0CC; font-size: 12px; margin: 4px 0 0; }
+  .info-btn {
+    width: 20px; height: 20px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;
+  }
+  .info-btn:hover { background: rgba(255,255,255,0.15); }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(10,20,15,0.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50; padding: 20px;
+  }
+  .modal-box {
+    background: var(--surface); border-radius: 14px; padding: 20px;
+    max-width: 320px; box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  }
+  .modal-box p { margin: 0 0 16px; color: var(--ink); font-size: 14px; line-height: 1.5; }
+  .modal-close {
+    background: var(--pitch); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%;
+  }
   .refresh-btn {
     background: rgba(255,255,255,0.15);
     color: #fff;
@@ -74,6 +107,7 @@
     overflow: hidden;
     padding: 8px 0;
     white-space: nowrap;
+    flex-shrink: 0;
   }
   .ticker-track {
     display: inline-flex;
@@ -95,7 +129,7 @@
   .ticker-item b { color: var(--gold); }
   .ticker-item strong { color: #fff; }
 
-  .nav-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nav-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-shrink: 0; }
   .nav-tab {
     background: none; border: none; cursor: pointer; white-space: nowrap;
     font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
@@ -104,14 +138,21 @@
   .nav-tab.active { color: var(--pitch); border-bottom-color: var(--pitch); }
   .nav-tab:hover:not(.active) { color: var(--ink); }
 
+  .app-root {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg);
+  }
   .container { max-width: 900px; margin: 0 auto; padding: 24px; }
   .hint { color: var(--ink-muted); font-size: 14px; margin-bottom: 16px; }
 
-  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 12px; border: 1px solid var(--border); }
   table { width: 100%; min-width: 420px; border-collapse: collapse; background: var(--surface); }
   th, td { padding: 12px 16px; text-align: center; white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); }
-  thead th { border-bottom: 1px solid var(--border); }
+  thead th { border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 2; }
+  thead th:first-child { z-index: 3; }
   tbody tr:not(:first-child) td { border-top: 1px solid var(--border); }
 
   @media (max-width: 640px) {
@@ -182,11 +223,24 @@
 <body>
 
 <div class="masthead">
-  <div>
-    <h1 class="font-display">MERCADO · BIWENGER 2026</h1>
-    <p id="last-updated"></p>
+  <div class="masthead-left">
+    <img src="icon-192.png" alt="" class="app-logo" />
+    <div>
+      <div class="title-row">
+        <h1 class="font-display">MUVINS BIWENGER</h1>
+        <button class="info-btn" onclick="toggleInfoModal()" aria-label="Informacion">i</button>
+      </div>
+      <p id="last-updated"></p>
+    </div>
   </div>
   <button class="refresh-btn" onclick="loadAll()">&#8635; Actualizar</button>
+</div>
+
+<div id="info-modal" class="modal-backdrop" style="display:none;" onclick="closeInfoIfBackdrop(event)">
+  <div class="modal-box">
+    <p>Compras y clausulas por semana. Pulsa un manager para ver su detalle.</p>
+    <button class="modal-close" onclick="toggleInfoModal()">Cerrar</button>
+  </div>
 </div>
 
 <div id="ticker-wrap" class="ticker-wrap" style="display:none;">
@@ -195,7 +249,7 @@
 
 <div class="nav-wrap" id="nav-wrap" style="display:none;"></div>
 
-<div class="container" id="app-root">
+<div class="app-root" id="app-root">
   <div class="loading">Cargando datos del mercado...</div>
 </div>
 
@@ -231,6 +285,14 @@ function typeBadgeHtml(tipo) {
   };
   const conf = map[tipo] || { bg: "#EEE", text: "#555", label: tipo || "-" };
   return `<span class="badge" style="background:${conf.bg};color:${conf.text}">${conf.label}</span>`;
+}
+
+function toggleInfoModal() {
+  const modal = document.getElementById("info-modal");
+  modal.style.display = modal.style.display === "none" ? "flex" : "none";
+}
+function closeInfoIfBackdrop(e) {
+  if (e.target.id === "info-modal") toggleInfoModal();
 }
 
 async function loadAll() {
@@ -313,8 +375,7 @@ function renderSummary() {
   selectedUser = null;
   renderNav("__resumen__");
   const root = document.getElementById("app-root");
-  let html = `<p class="hint">Compras y clausulas por semana. Pulsa un manager para ver su detalle.</p>`;
-  html += `<div class="table-scroll"><table><thead><tr><th class="font-mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-muted)">Semana</th>`;
+  let html = `<table><thead><tr><th class="font-mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-muted)">Semana</th>`;
   USERS.forEach(u => {
     html += `<th><button class="user-link" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button></th>`;
   });
@@ -335,7 +396,7 @@ function renderSummary() {
       html += `</tr>`;
     });
   }
-  html += `</tbody></table></div>`;
+  html += `</tbody></table>`;
   root.innerHTML = html;
 }
 
@@ -346,7 +407,8 @@ function renderDossier(username) {
     .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
 
   const root = document.getElementById("app-root");
-  let html = `<h2 class="font-display dossier-title">${username}</h2>`;
+  let html = `<div class="container">`;
+  html += `<h2 class="font-display dossier-title">${username}</h2>`;
   html += `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
 
   if (rows.length === 0) {
@@ -367,6 +429,7 @@ function renderDossier(username) {
         </div>`;
     });
   }
+  html += `</div>`;
   root.innerHTML = html;
 }
 
