@@ -130,8 +130,7 @@
   .ticker-item strong { color: #fff; }
 
   .nav-wrap {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
+    background: #0F2E1E;
     padding: 0 16px;
     padding-bottom: env(safe-area-inset-bottom, 0);
     display: flex;
@@ -139,15 +138,25 @@
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     flex-shrink: 0;
-    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
   }
   .nav-tab {
     background: none; border: none; cursor: pointer; white-space: nowrap;
     font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
-    color: var(--ink-muted); padding: 12px 14px; border-top: 2px solid transparent;
+    color: #EAF2ED; padding: 12px 14px; border-top: 2px solid transparent;
   }
-  .nav-tab.active { color: var(--pitch); border-top-color: var(--pitch); }
-  .nav-tab:hover:not(.active) { color: var(--ink); }
+  .nav-tab.active { color: var(--gold); border-top-color: var(--gold); }
+  .nav-tab:hover:not(.active) { color: #fff; }
+  .nav-tab-resumen {
+    color: var(--gold) !important;
+    position: sticky;
+    left: 0;
+    background: #0F2E1E;
+    z-index: 3;
+    padding-right: 18px;
+    margin-right: 4px;
+    box-shadow: 2px 0 0 rgba(227,167,46,0.4);
+  }
 
   .app-root {
     flex: 1;
@@ -353,7 +362,7 @@ function renderNav(activeKey) {
   const nav = document.getElementById("nav-wrap");
   if (USERS.length === 0) { nav.style.display = "none"; return; }
   nav.style.display = "flex";
-  let html = `<button class="nav-tab ${activeKey === "__resumen__" ? "active" : ""}" onclick="renderSummary()">Resumen</button>`;
+  let html = `<button class="nav-tab nav-tab-resumen ${activeKey === "__resumen__" ? "active" : ""}" onclick="renderSummary()">Resumen</button>`;
   USERS.forEach(u => {
     html += `<button class="nav-tab ${activeKey === u ? "active" : ""}" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button>`;
   });
