@@ -129,13 +129,24 @@
   .ticker-item b { color: var(--gold); }
   .ticker-item strong { color: #fff; }
 
-  .nav-wrap { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-shrink: 0; }
+  .nav-wrap {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0 16px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  }
   .nav-tab {
     background: none; border: none; cursor: pointer; white-space: nowrap;
     font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
-    color: var(--ink-muted); padding: 12px 14px; border-bottom: 2px solid transparent;
+    color: var(--ink-muted); padding: 12px 14px; border-top: 2px solid transparent;
   }
-  .nav-tab.active { color: var(--pitch); border-bottom-color: var(--pitch); }
+  .nav-tab.active { color: var(--pitch); border-top-color: var(--pitch); }
   .nav-tab:hover:not(.active) { color: var(--ink); }
 
   .app-root {
@@ -247,11 +258,11 @@
   <div class="ticker-track" id="ticker-track"></div>
 </div>
 
-<div class="nav-wrap" id="nav-wrap" style="display:none;"></div>
-
 <div class="app-root" id="app-root">
   <div class="loading">Cargando datos del mercado...</div>
 </div>
+
+<div class="nav-wrap" id="nav-wrap" style="display:none;"></div>
 
 <script>
 // ============================================================
