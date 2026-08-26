@@ -90,20 +90,13 @@
     background: var(--pitch); color: #fff; border: none; border-radius: 8px;
     padding: 9px 16px; font-size: 13px; font-weight: 600; cursor: pointer; width: 100%;
   }
-  .refresh-btn {
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+  .stats-btn {
+    width: 38px; height: 38px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
   }
-  .refresh-btn:hover { background: rgba(255,255,255,0.25); }
+  .stats-btn:hover { background: rgba(255,255,255,0.22); }
 
   .ticker-wrap {
     background: #0F2E1E;
@@ -169,6 +162,18 @@
     -webkit-overflow-scrolling: touch;
     background: var(--bg);
   }
+  .pull-indicator {
+    height: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+    transition: height 0.15s ease;
+  }
   .container { max-width: 900px; margin: 0 auto; padding: 24px; }
   .hint { color: var(--ink-muted); font-size: 14px; margin-bottom: 16px; }
 
@@ -183,7 +188,7 @@
     .masthead { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
     .masthead h1 { font-size: 16px; }
     .masthead p { font-size: 11px; }
-    .refresh-btn { padding: 6px 10px; font-size: 11px; }
+    .stats-btn { width: 32px; height: 32px; }
     .container { padding: 14px; }
     .hint { font-size: 12px; }
     .ticker-item { font-size: 11px; padding: 0 14px; }
@@ -237,7 +242,40 @@
     flex-shrink: 0;
   }
 
-  .error-box {
+  .stats-tabs {
+    display: flex; gap: 6px; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    margin-bottom: 16px; padding-bottom: 4px;
+  }
+  .stats-tab {
+    background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+    white-space: nowrap; font-family: 'Oswald', sans-serif; font-weight: 600;
+    font-size: 12px; color: var(--ink-muted); padding: 8px 12px; border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .stats-tab.active { background: var(--pitch); color: #fff; border-color: var(--pitch); }
+
+  .stats-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 4px 16px;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; font-size: 14px; color: var(--ink);
+  }
+  .stat-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .stat-row strong { font-family: 'JetBrains Mono', monospace; color: var(--pitch); }
+
+  .stats-table {
+    width: 100%; border-collapse: collapse; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  }
+  .stats-table th, .stats-table td { padding: 10px 14px; text-align: left; font-size: 13px; }
+  .stats-table thead th {
+    background: var(--bg); color: var(--ink-muted); font-size: 11px;
+    text-transform: uppercase; border-bottom: 1px solid var(--border);
+  }
+  .stats-table tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  .stats-table td:not(:first-child) { font-family: 'JetBrains Mono', monospace; color: var(--pitch); font-weight: 600; }
     background: var(--rose-bg); color: var(--rose-text); border-radius: 12px;
     padding: 20px; max-width: 500px; margin: 40px auto; font-size: 14px;
   }
@@ -257,7 +295,13 @@
       <p id="last-updated"></p>
     </div>
   </div>
-  <button class="refresh-btn" onclick="loadAll()">&#8635; Actualizar</button>
+  <button class="stats-btn" onclick="openStats()" aria-label="Estadisticas">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"></line>
+      <line x1="12" y1="20" x2="12" y2="4"></line>
+      <line x1="6" y1="20" x2="6" y2="14"></line>
+    </svg>
+  </button>
 </div>
 
 <div id="info-modal" class="modal-backdrop" style="display:none;" onclick="closeInfoIfBackdrop(event)">
@@ -272,7 +316,10 @@
 </div>
 
 <div class="app-root" id="app-root">
-  <div class="loading">Cargando datos del mercado...</div>
+  <div id="pull-indicator" class="pull-indicator"></div>
+  <div id="app-content">
+    <div class="loading">Cargando datos del mercado...</div>
+  </div>
 </div>
 
 <div class="nav-wrap" id="nav-wrap" style="display:none;"></div>
@@ -320,7 +367,7 @@ function closeInfoIfBackdrop(e) {
 }
 
 async function loadAll() {
-  const root = document.getElementById("app-root");
+  const root = document.getElementById("app-content");
   root.innerHTML = '<div class="loading">Cargando datos del mercado...</div>';
   document.getElementById("ticker-wrap").style.display = "none";
 
@@ -398,7 +445,7 @@ function renderTicker() {
 function renderSummary() {
   selectedUser = null;
   renderNav("__resumen__");
-  const root = document.getElementById("app-root");
+  const root = document.getElementById("app-content");
   let html = `<table><thead><tr><th class="font-mono" style="font-size:11px;text-transform:uppercase;color:var(--ink-muted)">Semana</th>`;
   USERS.forEach(u => {
     html += `<th><button class="user-link" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button></th>`;
@@ -430,7 +477,7 @@ function renderDossier(username) {
   const rows = (USER_DATA[username] || []).slice()
     .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
 
-  const root = document.getElementById("app-root");
+  const root = document.getElementById("app-content");
   let html = `<div class="container">`;
   html += `<h2 class="font-display dossier-title">${username}</h2>`;
   html += `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
@@ -456,6 +503,225 @@ function renderDossier(username) {
   html += `</div>`;
   root.innerHTML = html;
 }
+
+// ---------------------------------------------------------------------------
+// Estadisticas
+// ---------------------------------------------------------------------------
+let statsTab = "total";
+
+function allRows() {
+  const rows = [];
+  Object.entries(USER_DATA).forEach(([usuario, data]) => {
+    (data || []).forEach(r => { if (r && r.Fecha) rows.push({ ...r, usuario }); });
+  });
+  return rows;
+}
+
+function openStats() {
+  selectedUser = null;
+  renderNav("__stats__");
+  renderStats();
+}
+
+function statsTabButton(key, label) {
+  const active = statsTab === key ? "active" : "";
+  return `<button class="stats-tab ${active}" onclick="setStatsTab('${key}')">${label}</button>`;
+}
+
+function setStatsTab(key) {
+  statsTab = key;
+  renderStats();
+}
+
+function renderStats() {
+  const root = document.getElementById("app-content");
+  const rows = allRows();
+
+  let body = "";
+  if (statsTab === "total") body = renderStatsTotal(rows);
+  else if (statsTab === "movimientos") body = renderStatsMovimientos(rows);
+  else if (statsTab === "clausulas") body = renderStatsClausulas(rows);
+  else if (statsTab === "patinazos") body = renderStatsPatinazos(rows);
+  else if (statsTab === "inactividad") body = renderStatsInactividad(rows);
+
+  root.innerHTML = `
+    <div class="container">
+      <h2 class="font-display dossier-title">Estadisticas</h2>
+      <div class="stats-tabs">
+        ${statsTabButton("total", "Total")}
+        ${statsTabButton("movimientos", "Movimientos")}
+        ${statsTabButton("clausulas", "Clausulas")}
+        ${statsTabButton("patinazos", "Patinazos")}
+        ${statsTabButton("inactividad", "Inactividad")}
+      </div>
+      ${body}
+    </div>
+  `;
+}
+
+function statRow(label, value) {
+  return `<div class="stat-row"><span>${label}</span><strong>${value}</strong></div>`;
+}
+
+function rankingTable(headers, dataRows) {
+  let html = `<table class="stats-table"><thead><tr>`;
+  headers.forEach(h => { html += `<th>${h}</th>`; });
+  html += `</tr></thead><tbody>`;
+  dataRows.forEach(cols => {
+    html += `<tr>` + cols.map(c => `<td>${c}</td>`).join("") + `</tr>`;
+  });
+  html += `</tbody></table>`;
+  return html;
+}
+
+function renderStatsTotal(rows) {
+  const total = rows.length;
+  const compras = rows.filter(r => r.Tipo === "Compra").length;
+  const ventas = rows.filter(r => r.Tipo === "Venta").length;
+  const clausulas = rows.filter(r => r.Tipo === "Clausula compra").length; // cada clausula genera 2 filas, contamos 1 vez
+  return `
+    <div class="stats-card">
+      ${statRow("Movimientos totales", total)}
+      ${statRow("Compras al mercado", compras)}
+      ${statRow("Ventas al mercado", ventas)}
+      ${statRow("Clausulazos", clausulas)}
+    </div>
+  `;
+}
+
+function renderStatsMovimientos(rows) {
+  const counts = {};
+  USERS.forEach(u => { counts[u] = 0; });
+  rows.forEach(r => {
+    if (r.Tipo === "Compra" || r.Tipo === "Venta") {
+      counts[r.usuario] = (counts[r.usuario] || 0) + 1;
+    }
+  });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  return rankingTable(
+    ["Usuario", "Compras + Ventas"],
+    sorted.map(([u, n]) => [u, n])
+  );
+}
+
+function renderStatsClausulas(rows) {
+  const cazador = {};
+  const clausulado = {};
+  USERS.forEach(u => { cazador[u] = 0; clausulado[u] = 0; });
+  rows.forEach(r => {
+    if (r.Tipo === "Clausula compra") cazador[r.usuario] = (cazador[r.usuario] || 0) + 1;
+    if (r.Tipo === "Clausula venta") clausulado[r.usuario] = (clausulado[r.usuario] || 0) + 1;
+  });
+  const sorted = USERS.slice().sort((a, b) => (cazador[b] || 0) - (cazador[a] || 0));
+  return rankingTable(
+    ["Usuario", "Cazador", "Clausulado"],
+    sorted.map(u => [u, cazador[u] || 0, clausulado[u] || 0])
+  );
+}
+
+function weeklyAcquisitionCounts() {
+  // { usuario: { semana: n } }
+  const counts = {};
+  USERS.forEach(u => { counts[u] = {}; });
+  Object.entries(USER_DATA).forEach(([usuario, data]) => {
+    (data || []).forEach(r => {
+      if (r.Tipo === "Compra" || r.Tipo === "Clausula compra") {
+        counts[usuario][r.Semana] = (counts[usuario][r.Semana] || 0) + 1;
+      }
+    });
+  });
+  return counts;
+}
+
+function renderStatsPatinazos(rows) {
+  const weekly = weeklyAcquisitionCounts();
+  const patinazos = {};
+  USERS.forEach(u => {
+    patinazos[u] = Object.values(weekly[u] || {}).filter(n => n > 3).length;
+  });
+  const sorted = USERS.slice().sort((a, b) => (patinazos[b] || 0) - (patinazos[a] || 0));
+  return rankingTable(
+    ["Usuario", "Semanas con mas de 3 fichajes"],
+    sorted.map(u => [u, patinazos[u] || 0])
+  );
+}
+
+function renderStatsInactividad(rows) {
+  const lastSeen = {};
+  Object.entries(USER_DATA).forEach(([usuario, data]) => {
+    (data || []).forEach(r => {
+      if (!r.Fecha) return;
+      if (!lastSeen[usuario] || r.Fecha > lastSeen[usuario]) lastSeen[usuario] = r.Fecha;
+    });
+  });
+  const now = new Date();
+  const entries = USERS.map(u => {
+    if (!lastSeen[u]) {
+      return { usuario: u, days: -1, label: "Sin movimientos registrados" };
+    }
+    const lastDate = new Date(lastSeen[u].replace(" ", "T"));
+    const days = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
+    return { usuario: u, days, label: `${days} dia${days === 1 ? "" : "s"} sin moverse` };
+  });
+  entries.sort((a, b) => b.days - a.days);
+  return rankingTable(
+    ["Usuario", "Inactividad"],
+    entries.map(e => [e.usuario, e.label])
+  );
+}
+
+
+(function setupPullToRefresh() {
+  const appRoot = document.getElementById("app-root");
+  const indicator = document.getElementById("pull-indicator");
+  const THRESHOLD = 70;
+  const MAX_PULL = 95;
+  let startY = null;
+  let pulling = false;
+  let refreshing = false;
+
+  appRoot.addEventListener("touchstart", (e) => {
+    if (refreshing) return;
+    if (appRoot.scrollTop <= 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    } else {
+      startY = null;
+      pulling = false;
+    }
+  }, { passive: true });
+
+  appRoot.addEventListener("touchmove", (e) => {
+    if (!pulling || startY === null || refreshing) return;
+    const delta = e.touches[0].clientY - startY;
+    if (delta > 0 && appRoot.scrollTop <= 0) {
+      e.preventDefault();
+      const capped = Math.min(delta * 0.5, MAX_PULL);
+      indicator.style.height = capped + "px";
+      indicator.textContent = capped >= THRESHOLD
+        ? "\u2191 Suelta para actualizar"
+        : "\u2193 Desliza hacia abajo para actualizar";
+    }
+  }, { passive: false });
+
+  appRoot.addEventListener("touchend", () => {
+    if (!pulling) return;
+    const currentHeight = parseFloat(indicator.style.height) || 0;
+    if (currentHeight >= THRESHOLD && !refreshing) {
+      refreshing = true;
+      indicator.textContent = "Actualizando...";
+      indicator.style.height = "50px";
+      loadAll().finally(() => {
+        indicator.style.height = "0px";
+        refreshing = false;
+      });
+    } else {
+      indicator.style.height = "0px";
+    }
+    pulling = false;
+    startY = null;
+  });
+})();
 
 loadAll();
 </script>
