@@ -392,7 +392,9 @@ function typeBadgeHtml(tipo) {
   const map = {
     Compra: { bg: "var(--green-bg)", text: "var(--green-text)", label: "Compra" },
     Venta: { bg: "var(--rose-bg)", text: "var(--rose-text)", label: "Venta" },
-    Clausula: { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
+    "Clausula compra": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
+    "Clausula venta": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
+    Patinazo: { bg: "#E9EBEA", text: "#1a1a1a", label: "Patinazo" },
   };
   const conf = map[tipo] || { bg: "#EEE", text: "#555", label: tipo || "-" };
   return `<span class="badge" style="background:${conf.bg};color:${conf.text}">${conf.label}</span>`;
@@ -542,20 +544,29 @@ let dossierFilter = "todos";
 
 function dossierFilterButton(key, label) {
   const active = dossierFilter === key ? "active" : "";
-  return `<button class="stats-tab ${active}" onclick="setDossierFilter('${key}')">${label}</button>`;
+  return `<button class="stats-tab ${active}" data-filter="${key}" onclick="setDossierFilter('${key}')">${label}</button>`;
 }
 
 function setDossierFilter(f) {
   dossierFilter = f;
+  document.querySelectorAll("#dossier-filters .stats-tab").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.filter === f);
+  });
   renderDossierList();
 }
 
 function filterDossierRows(rows) {
   if (dossierFilter === "compras") {
-    return rows.filter(r => r.Tipo === "Compra" || r.Tipo === "Clausula compra");
+    return rows.filter(r => r.Tipo === "Compra");
   }
   if (dossierFilter === "ventas") {
-    return rows.filter(r => r.Tipo === "Venta" || r.Tipo === "Clausula venta");
+    return rows.filter(r => r.Tipo === "Venta");
+  }
+  if (dossierFilter === "clausulas") {
+    return rows.filter(r => r.Tipo === "Clausula compra" || r.Tipo === "Clausula venta");
+  }
+  if (dossierFilter === "patinazos") {
+    return rows.filter(r => r.Tipo === "Patinazo");
   }
   return rows;
 }
@@ -596,10 +607,12 @@ function renderDossier(username) {
   const root = document.getElementById("app-content");
   let html = `<div class="container">`;
   html += `<h2 class="font-display dossier-title">${username}</h2>`;
-  html += `<div class="stats-tabs">
+  html += `<div class="stats-tabs" id="dossier-filters">
     ${dossierFilterButton("todos", "Todos")}
     ${dossierFilterButton("compras", "Compras")}
     ${dossierFilterButton("ventas", "Ventas")}
+    ${dossierFilterButton("clausulas", "Clausulas")}
+    ${dossierFilterButton("patinazos", "Patinazos")}
   </div>`;
   html += `<div id="dossier-list"></div>`;
   html += `</div>`;
@@ -617,7 +630,30 @@ function allRows() {
   Object.entries(USER_DATA).forEach(([usuario, data]) => {
     (data || []).forEach(r => { if (r && r.Fecha) rows.push({ ...r, usuario }); });
   });
+  markCorrectedAcquisitions(rows);
   return rows;
+}
+
+// Marca con .corregida=true las filas de Compra/Clausula compra que fueron
+// corregidas despues por un Patinazo del mismo jugador (mismo usuario). Estas
+// se excluyen de Total, Movimientos y Clausulas, pero NO de Patinazos (que
+// usa los datos crudos a proposito, como "cuadro de la verguenza") ni de la
+// ficha individual del usuario (que muestra el historial completo tal cual).
+function markCorrectedAcquisitions(rows) {
+  const byKey = {};
+  rows.forEach(r => {
+    const key = r.usuario + "||" + r.Jugador;
+    (byKey[key] = byKey[key] || []).push(r);
+  });
+  Object.values(byKey).forEach(list => {
+    list.sort((a, b) => (a.Fecha || "").localeCompare(b.Fecha || ""));
+    for (let i = 0; i < list.length - 1; i++) {
+      const a = list[i], b = list[i + 1];
+      if ((a.Tipo === "Compra" || a.Tipo === "Clausula compra") && b.Tipo === "Patinazo") {
+        a.corregida = true;
+      }
+    }
+  });
 }
 
 function openStats() {
@@ -678,10 +714,11 @@ function rankingTable(headers, dataRows) {
 }
 
 function renderStatsTotal(rows) {
-  const total = rows.length;
-  const compras = rows.filter(r => r.Tipo === "Compra").length;
-  const ventas = rows.filter(r => r.Tipo === "Venta").length;
-  const clausulas = rows.filter(r => r.Tipo === "Clausula compra").length; // cada clausula genera 2 filas, contamos 1 vez
+  const vigentes = rows.filter(r => !r.corregida);
+  const total = vigentes.length;
+  const compras = vigentes.filter(r => r.Tipo === "Compra").length;
+  const ventas = vigentes.filter(r => r.Tipo === "Venta").length;
+  const clausulas = vigentes.filter(r => r.Tipo === "Clausula compra").length; // cada clausula genera 2 filas, contamos 1 vez
   return `
     <div class="stats-card">
       ${statRow("Movimientos totales", total)}
@@ -697,7 +734,7 @@ function renderStatsMovimientos(rows) {
   const ventas = {};
   USERS.forEach(u => { compras[u] = 0; ventas[u] = 0; });
   rows.forEach(r => {
-    if (r.Tipo === "Compra") compras[r.usuario] = (compras[r.usuario] || 0) + 1;
+    if (r.Tipo === "Compra" && !r.corregida) compras[r.usuario] = (compras[r.usuario] || 0) + 1;
     if (r.Tipo === "Venta") ventas[r.usuario] = (ventas[r.usuario] || 0) + 1;
   });
   const sorted = USERS.slice().sort((a, b) => (compras[b] || 0) - (compras[a] || 0));
@@ -756,7 +793,7 @@ function renderStatsClausulas(rows) {
   const clausulado = {};
   USERS.forEach(u => { cazador[u] = 0; clausulado[u] = 0; });
   rows.forEach(r => {
-    if (r.Tipo === "Clausula compra") cazador[r.usuario] = (cazador[r.usuario] || 0) + 1;
+    if (r.Tipo === "Clausula compra" && !r.corregida) cazador[r.usuario] = (cazador[r.usuario] || 0) + 1;
     if (r.Tipo === "Clausula venta") clausulado[r.usuario] = (clausulado[r.usuario] || 0) + 1;
   });
   CLAUSULA_CAZADOR = cazador;
@@ -766,7 +803,7 @@ function renderStatsClausulas(rows) {
   const paidBy = {};
   USERS.forEach(u => { paidTo[u] = {}; paidBy[u] = {}; });
   rows.forEach(r => {
-    if (r.Tipo === "Clausula compra") {
+    if (r.Tipo === "Clausula compra" && !r.corregida) {
       paidTo[r.usuario][r.Vendedor] = (paidTo[r.usuario][r.Vendedor] || 0) + 1;
       if (paidBy[r.Vendedor]) paidBy[r.Vendedor][r.usuario] = (paidBy[r.Vendedor][r.usuario] || 0) + 1;
     }
