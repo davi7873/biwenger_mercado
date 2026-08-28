@@ -253,6 +253,11 @@
     flex-shrink: 0;
   }
   .stats-tab.active { background: var(--pitch); color: #fff; border-color: var(--pitch); }
+  .stats-subtitle {
+    font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 13px;
+    color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.5px;
+    margin: 20px 0 8px;
+  }
 
   .stats-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -613,10 +618,40 @@ function renderStatsClausulas(rows) {
     if (r.Tipo === "Clausula venta") clausulado[r.usuario] = (clausulado[r.usuario] || 0) + 1;
   });
   const sorted = USERS.slice().sort((a, b) => (cazador[b] || 0) - (cazador[a] || 0));
-  return rankingTable(
+  const mainTable = rankingTable(
     ["Usuario", "Cazador", "Clausulado"],
     sorted.map(u => [u, cazador[u] || 0, clausulado[u] || 0])
   );
+
+  // Victima: a quien le paga la clausula mas veces cada usuario.
+  // Verdugo: quien le paga la clausula mas veces a cada usuario.
+  const paidTo = {};    // paidTo[usuario][contraparte] = veces que usuario le clausulo a contraparte
+  const paidBy = {};    // paidBy[usuario][contraparte] = veces que contraparte le clausulo a usuario
+  USERS.forEach(u => { paidTo[u] = {}; paidBy[u] = {}; });
+  rows.forEach(r => {
+    if (r.Tipo === "Clausula compra") {
+      // r.usuario pago la clausula, r.Vendedor es la victima
+      paidTo[r.usuario][r.Vendedor] = (paidTo[r.usuario][r.Vendedor] || 0) + 1;
+      if (paidBy[r.Vendedor]) paidBy[r.Vendedor][r.usuario] = (paidBy[r.Vendedor][r.usuario] || 0) + 1;
+    }
+  });
+
+  function topRival(map) {
+    const entries = Object.entries(map);
+    if (entries.length === 0) return "-";
+    entries.sort((a, b) => b[1] - a[1]);
+    const [nombre, veces] = entries[0];
+    return `${nombre} (${veces})`;
+  }
+
+  const rivalRows = sorted.map(u => [u, topRival(paidTo[u]), topRival(paidBy[u])]);
+  const rivalTable = rankingTable(["Usuario", "Victima", "Verdugo"], rivalRows);
+
+  return `
+    ${mainTable}
+    <p class="stats-subtitle">Rivalidades</p>
+    ${rivalTable}
+  `;
 }
 
 function weeklyAcquisitionCounts() {
