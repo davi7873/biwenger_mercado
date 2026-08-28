@@ -531,7 +531,6 @@ function renderSummary() {
 
   root.innerHTML = `
     <div class="container">
-      <p class="hint">Compras y clausulas de la semana seleccionada. Pulsa un manager para ver su detalle.</p>
       <select class="rival-select" onchange="onSummaryWeekChange(this.value)">${options}</select>
       <div id="week-detail">${buildWeekDetail(summarySelectedWeek)}</div>
     </div>
