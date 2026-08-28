@@ -531,25 +531,44 @@ function renderSummary() {
 
   root.innerHTML = `
     <div class="container">
+      <p class="hint">Compras y clausulas de la semana seleccionada. Pulsa un manager para ver su detalle.</p>
       <select class="rival-select" onchange="onSummaryWeekChange(this.value)">${options}</select>
       <div id="week-detail">${buildWeekDetail(summarySelectedWeek)}</div>
     </div>
   `;
 }
 
-function renderDossier(username) {
-  selectedUser = username;
-  renderNav(username);
-  const rows = (USER_DATA[username] || []).slice()
-    .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
+let dossierFilter = "todos";
 
-  const root = document.getElementById("app-content");
-  let html = `<div class="container">`;
-  html += `<h2 class="font-display dossier-title">${username}</h2>`;
-  html += `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
+function dossierFilterButton(key, label) {
+  const active = dossierFilter === key ? "active" : "";
+  return `<button class="stats-tab ${active}" onclick="setDossierFilter('${key}')">${label}</button>`;
+}
+
+function setDossierFilter(f) {
+  dossierFilter = f;
+  renderDossierList();
+}
+
+function filterDossierRows(rows) {
+  if (dossierFilter === "compras") {
+    return rows.filter(r => r.Tipo === "Compra" || r.Tipo === "Clausula compra");
+  }
+  if (dossierFilter === "ventas") {
+    return rows.filter(r => r.Tipo === "Venta" || r.Tipo === "Clausula venta");
+  }
+  return rows;
+}
+
+function renderDossierList() {
+  const allRows = (USER_DATA[selectedUser] || []).slice()
+    .sort((a, b) => (b.Fecha || "").localeCompare(a.Fecha || ""));
+  const rows = filterDossierRows(allRows);
+
+  let html = `<p class="dossier-sub">${rows.length} movimiento${rows.length === 1 ? "" : "s"} registrado${rows.length === 1 ? "" : "s"}</p>`;
 
   if (rows.length === 0) {
-    html += `<div class="card" style="justify-content:center;color:var(--ink-muted)">Sin movimientos todavia.</div>`;
+    html += `<div class="card" style="justify-content:center;color:var(--ink-muted)">Sin movimientos con este filtro.</div>`;
   } else {
     rows.forEach(r => {
       const vendorLabel = r.Vendedor === "Mercado" ? "Mercado libre" : `Rival: ${r.Vendedor}`;
@@ -566,8 +585,26 @@ function renderDossier(username) {
         </div>`;
     });
   }
+  document.getElementById("dossier-list").innerHTML = html;
+}
+
+function renderDossier(username) {
+  selectedUser = username;
+  dossierFilter = "todos";
+  renderNav(username);
+
+  const root = document.getElementById("app-content");
+  let html = `<div class="container">`;
+  html += `<h2 class="font-display dossier-title">${username}</h2>`;
+  html += `<div class="stats-tabs">
+    ${dossierFilterButton("todos", "Todos")}
+    ${dossierFilterButton("compras", "Compras")}
+    ${dossierFilterButton("ventas", "Ventas")}
+  </div>`;
+  html += `<div id="dossier-list"></div>`;
   html += `</div>`;
   root.innerHTML = html;
+  renderDossierList();
 }
 
 // ---------------------------------------------------------------------------
