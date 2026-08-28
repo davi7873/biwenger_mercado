@@ -830,29 +830,15 @@ function renderStatsClausulas(rows) {
   `;
 }
 
-function weeklyAcquisitionCounts() {
-  // { usuario: { semana: n } }
-  const counts = {};
-  USERS.forEach(u => { counts[u] = {}; });
-  Object.entries(USER_DATA).forEach(([usuario, data]) => {
-    (data || []).forEach(r => {
-      if (r.Tipo === "Compra" || r.Tipo === "Clausula compra") {
-        counts[usuario][r.Semana] = (counts[usuario][r.Semana] || 0) + 1;
-      }
-    });
-  });
-  return counts;
-}
-
 function renderStatsPatinazos(rows) {
-  const weekly = weeklyAcquisitionCounts();
   const patinazos = {};
-  USERS.forEach(u => {
-    patinazos[u] = Object.values(weekly[u] || {}).filter(n => n > 3).length;
+  USERS.forEach(u => { patinazos[u] = 0; });
+  rows.forEach(r => {
+    if (r.Tipo === "Patinazo") patinazos[r.usuario] = (patinazos[r.usuario] || 0) + 1;
   });
   const sorted = USERS.slice().sort((a, b) => (patinazos[b] || 0) - (patinazos[a] || 0));
   return rankingTable(
-    ["Usuario", "Semanas con mas de 3 fichajes"],
+    ["Usuario", "Recuento deBububuup..."],
     sorted.map(u => [u, patinazos[u] || 0])
   );
 }
