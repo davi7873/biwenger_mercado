@@ -693,14 +693,14 @@ function renderStatsClausulas(rows) {
   CLAUSULA_PAID_TO = paidTo;
   CLAUSULA_PAID_BY = paidBy;
 
-  const activeUsers = sorted.filter(u => (cazador[u] || 0) > 0 || (clausulado[u] || 0) > 0);
+  const activeUsers = sorted;
   if (!clausulaSelectedUser || !activeUsers.includes(clausulaSelectedUser)) {
     clausulaSelectedUser = activeUsers[0] || null;
   }
 
   let selectorAndDetail;
   if (activeUsers.length === 0) {
-    selectorAndDetail = `<p class="hint" style="margin-top:8px;">Todavia no hay clausulazos registrados.</p>`;
+    selectorAndDetail = `<p class="hint" style="margin-top:8px;">Todavia no hay usuarios registrados.</p>`;
   } else {
     const options = activeUsers.map(u =>
       `<option value="${u}" ${u === clausulaSelectedUser ? "selected" : ""}>${u}</option>`
