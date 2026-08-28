@@ -656,10 +656,10 @@ function buildUserClausulaBlock(u) {
   const cazador = CLAUSULA_CAZADOR[u] || 0;
   const cazado = CLAUSULA_CLAUSULADO[u] || 0;
   return `
+    <p class="stats-subtitle">Jachazos al paso</p>
     <div class="stats-card" style="margin-bottom:16px;">
       ${statRow("Cazador", cazador)}
       ${statRow("Cazado", cazado)}
-      ${statRow("Total Clausulas", cazador + cazado)}
     </div>
     <p class="stats-subtitle">Francotiradores</p>
     <div class="rival-block">
