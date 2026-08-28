@@ -838,7 +838,7 @@ function renderStatsPatinazos(rows) {
   });
   const sorted = USERS.slice().sort((a, b) => (patinazos[b] || 0) - (patinazos[a] || 0));
   return rankingTable(
-    ["Usuario", "Recuento deBububuup..."],
+    ["Usuario", "Recuento de Bububuup..."],
     sorted.map(u => [u, patinazos[u] || 0])
   );
 }
