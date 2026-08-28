@@ -258,6 +258,12 @@
     color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.5px;
     margin: 20px 0 8px;
   }
+  .rival-select {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-family: 'Oswald', sans-serif;
+    font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 10px;
+    -webkit-appearance: none; appearance: none;
+  }
   .rival-block {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 14px 16px; margin-bottom: 10px;
@@ -625,6 +631,40 @@ function renderStatsMovimientos(rows) {
   );
 }
 
+let CLAUSULA_PAID_TO = {};
+let CLAUSULA_PAID_BY = {};
+let clausulaSelectedUser = null;
+
+function fullRivalList(map) {
+  return Object.entries(map || {}).sort((a, b) => b[1] - a[1]);
+}
+
+function rivalColumn(title, list) {
+  if (list.length === 0) {
+    return `<div class="rival-col"><span class="rival-col-title">${title}</span><div class="rival-item rival-empty">-</div></div>`;
+  }
+  const items = list.map(([nombre, veces]) =>
+    `<div class="rival-item"><span>${nombre}</span><strong>${veces}</strong></div>`
+  ).join("");
+  return `<div class="rival-col"><span class="rival-col-title">${title}</span>${items}</div>`;
+}
+
+function buildRivalBlock(u) {
+  return `
+    <div class="rival-block">
+      <div class="rival-cols">
+        ${rivalColumn("Victima", fullRivalList(CLAUSULA_PAID_TO[u]))}
+        ${rivalColumn("Verdugo", fullRivalList(CLAUSULA_PAID_BY[u]))}
+      </div>
+    </div>
+  `;
+}
+
+function onClausulaUserChange(u) {
+  clausulaSelectedUser = u;
+  document.getElementById("rival-detail").innerHTML = buildRivalBlock(u);
+}
+
 function renderStatsClausulas(rows) {
   const cazador = {};
   const clausulado = {};
@@ -641,8 +681,8 @@ function renderStatsClausulas(rows) {
 
   // Victima: a quien le paga la clausula cada usuario (y cuantas veces).
   // Verdugo: quien le paga la clausula a cada usuario (y cuantas veces).
-  const paidTo = {};    // paidTo[usuario][contraparte] = veces que usuario clausulo a contraparte
-  const paidBy = {};    // paidBy[usuario][contraparte] = veces que contraparte clausulo a usuario
+  const paidTo = {};
+  const paidBy = {};
   USERS.forEach(u => { paidTo[u] = {}; paidBy[u] = {}; });
   rows.forEach(r => {
     if (r.Tipo === "Clausula compra") {
@@ -650,40 +690,31 @@ function renderStatsClausulas(rows) {
       if (paidBy[r.Vendedor]) paidBy[r.Vendedor][r.usuario] = (paidBy[r.Vendedor][r.usuario] || 0) + 1;
     }
   });
-
-  function fullRivalList(map) {
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }
-
-  function rivalColumn(title, list) {
-    if (list.length === 0) {
-      return `<div class="rival-col"><span class="rival-col-title">${title}</span><div class="rival-item rival-empty">-</div></div>`;
-    }
-    const items = list.map(([nombre, veces]) =>
-      `<div class="rival-item"><span>${nombre}</span><strong>${veces}</strong></div>`
-    ).join("");
-    return `<div class="rival-col"><span class="rival-col-title">${title}</span>${items}</div>`;
-  }
+  CLAUSULA_PAID_TO = paidTo;
+  CLAUSULA_PAID_BY = paidBy;
 
   const activeUsers = sorted.filter(u => (cazador[u] || 0) > 0 || (clausulado[u] || 0) > 0);
-  const rivalBlocks = activeUsers.map(u => `
-    <div class="rival-block">
-      <p class="rival-user">${u}</p>
-      <div class="rival-cols">
-        ${rivalColumn("Victima", fullRivalList(paidTo[u]))}
-        ${rivalColumn("Verdugo", fullRivalList(paidBy[u]))}
-      </div>
-    </div>
-  `).join("");
+  if (!clausulaSelectedUser || !activeUsers.includes(clausulaSelectedUser)) {
+    clausulaSelectedUser = activeUsers[0] || null;
+  }
 
-  const rivalSection = activeUsers.length > 0
-    ? rivalBlocks
-    : `<p class="hint" style="margin-top:8px;">Todavia no hay clausulazos registrados.</p>`;
+  let selectorAndDetail;
+  if (activeUsers.length === 0) {
+    selectorAndDetail = `<p class="hint" style="margin-top:8px;">Todavia no hay clausulazos registrados.</p>`;
+  } else {
+    const options = activeUsers.map(u =>
+      `<option value="${u}" ${u === clausulaSelectedUser ? "selected" : ""}>${u}</option>`
+    ).join("");
+    selectorAndDetail = `
+      <select class="rival-select" onchange="onClausulaUserChange(this.value)">${options}</select>
+      <div id="rival-detail">${buildRivalBlock(clausulaSelectedUser)}</div>
+    `;
+  }
 
   return `
     ${mainTable}
     <p class="stats-subtitle">Rivalidades</p>
-    ${rivalSection}
+    ${selectorAndDetail}
   `;
 }
 
