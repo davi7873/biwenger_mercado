@@ -346,7 +346,7 @@
 
 <div id="info-modal" class="modal-backdrop" style="display:none;" onclick="closeInfoIfBackdrop(event)">
   <div class="modal-box">
-    <p>Compras y clausulas por semana. Pulsa un manager para ver su detalle.</p>
+    <p>Compras por semana. Pulsa un manager para ver su detalle.</p>
     <button class="modal-close" onclick="toggleInfoModal()">Cerrar</button>
   </div>
 </div>
@@ -392,8 +392,6 @@ function typeBadgeHtml(tipo) {
   const map = {
     Compra: { bg: "var(--green-bg)", text: "var(--green-text)", label: "Compra" },
     Venta: { bg: "var(--rose-bg)", text: "var(--rose-text)", label: "Venta" },
-    "Clausula compra": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
-    "Clausula venta": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula" },
     Patinazo: { bg: "#E9EBEA", text: "#1a1a1a", label: "Patinazo" },
   };
   const conf = map[tipo] || { bg: "#EEE", text: "#555", label: tipo || "-" };
@@ -533,7 +531,6 @@ function renderSummary() {
 
   root.innerHTML = `
     <div class="container">
-      <p class="hint">Compras y clausulas de la semana seleccionada. Pulsa un manager para ver su detalle.</p>
       <select class="rival-select" onchange="onSummaryWeekChange(this.value)">${options}</select>
       <div id="week-detail">${buildWeekDetail(summarySelectedWeek)}</div>
     </div>
@@ -561,9 +558,6 @@ function filterDossierRows(rows) {
   }
   if (dossierFilter === "ventas") {
     return rows.filter(r => r.Tipo === "Venta");
-  }
-  if (dossierFilter === "clausulas") {
-    return rows.filter(r => r.Tipo === "Clausula compra" || r.Tipo === "Clausula venta");
   }
   if (dossierFilter === "patinazos") {
     return rows.filter(r => r.Tipo === "Patinazo");
@@ -611,7 +605,6 @@ function renderDossier(username) {
     ${dossierFilterButton("todos", "Todos")}
     ${dossierFilterButton("compras", "Compras")}
     ${dossierFilterButton("ventas", "Ventas")}
-    ${dossierFilterButton("clausulas", "Clausulas")}
     ${dossierFilterButton("patinazos", "Patinazos")}
   </div>`;
   html += `<div id="dossier-list"></div>`;
@@ -634,11 +627,11 @@ function allRows() {
   return rows;
 }
 
-// Marca con .corregida=true las filas de Compra/Clausula compra que fueron
-// corregidas despues por un Patinazo del mismo jugador (mismo usuario). Estas
-// se excluyen de Total, Movimientos y Clausulas, pero NO de Patinazos (que
-// usa los datos crudos a proposito, como "cuadro de la verguenza") ni de la
-// ficha individual del usuario (que muestra el historial completo tal cual).
+// Marca con .corregida=true las filas de Compra que fueron corregidas
+// despues por un Patinazo del mismo jugador (mismo usuario). Estas se
+// excluyen de Total y Movimientos, pero NO de Patinazos (que usa los datos
+// crudos a proposito, como "cuadro de la verguenza") ni de la ficha
+// individual del usuario (que muestra el historial completo tal cual).
 function markCorrectedAcquisitions(rows) {
   const byKey = {};
   rows.forEach(r => {
@@ -649,7 +642,7 @@ function markCorrectedAcquisitions(rows) {
     list.sort((a, b) => (a.Fecha || "").localeCompare(b.Fecha || ""));
     for (let i = 0; i < list.length - 1; i++) {
       const a = list[i], b = list[i + 1];
-      if ((a.Tipo === "Compra" || a.Tipo === "Clausula compra") && b.Tipo === "Patinazo") {
+      if (a.Tipo === "Compra" && b.Tipo === "Patinazo") {
         a.corregida = true;
       }
     }
@@ -679,7 +672,6 @@ function renderStats() {
   let body = "";
   if (statsTab === "total") body = renderStatsTotal(rows);
   else if (statsTab === "movimientos") body = renderStatsMovimientos(rows);
-  else if (statsTab === "clausulas") body = renderStatsClausulas(rows);
   else if (statsTab === "patinazos") body = renderStatsPatinazos(rows);
   else if (statsTab === "inactividad") body = renderStatsInactividad(rows);
 
@@ -689,7 +681,6 @@ function renderStats() {
       <div class="stats-tabs">
         ${statsTabButton("total", "Total")}
         ${statsTabButton("movimientos", "Movimientos")}
-        ${statsTabButton("clausulas", "Clausulas")}
         ${statsTabButton("patinazos", "Patinazos")}
         ${statsTabButton("inactividad", "Inactividad")}
       </div>
@@ -718,13 +709,11 @@ function renderStatsTotal(rows) {
   const total = vigentes.length;
   const compras = vigentes.filter(r => r.Tipo === "Compra").length;
   const ventas = vigentes.filter(r => r.Tipo === "Venta").length;
-  const clausulas = vigentes.filter(r => r.Tipo === "Clausula compra").length; // cada clausula genera 2 filas, contamos 1 vez
   return `
     <div class="stats-card">
       ${statRow("Movimientos totales", total)}
       ${statRow("Compras al mercado", compras)}
       ${statRow("Ventas al mercado", ventas)}
-      ${statRow("Clausulazos", clausulas)}
     </div>
   `;
 }
@@ -744,92 +733,6 @@ function renderStatsMovimientos(rows) {
   );
 }
 
-let CLAUSULA_CAZADOR = {};
-let CLAUSULA_CLAUSULADO = {};
-let CLAUSULA_PAID_TO = {};
-let CLAUSULA_PAID_BY = {};
-let clausulaSelectedUser = null;
-
-function fullRivalList(map) {
-  return Object.entries(map || {}).sort((a, b) => b[1] - a[1]);
-}
-
-function rivalColumn(title, list) {
-  if (list.length === 0) {
-    return `<div class="rival-col"><span class="rival-col-title">${title}</span><div class="rival-item rival-empty">-</div></div>`;
-  }
-  const items = list.map(([nombre, veces]) =>
-    `<div class="rival-item"><span>${nombre}</span><strong>${veces}</strong></div>`
-  ).join("");
-  return `<div class="rival-col"><span class="rival-col-title">${title}</span>${items}</div>`;
-}
-
-function buildUserClausulaBlock(u) {
-  const cazador = CLAUSULA_CAZADOR[u] || 0;
-  const cazado = CLAUSULA_CLAUSULADO[u] || 0;
-  return `
-    <p class="stats-subtitle">Jachazos al paso</p>
-    <div class="stats-card" style="margin-bottom:16px;">
-      ${statRow("Cazador", cazador)}
-      ${statRow("Cazado", cazado)}
-    </div>
-    <p class="stats-subtitle">Francotiradores</p>
-    <div class="rival-block">
-      <div class="rival-cols">
-        ${rivalColumn("Vistima", fullRivalList(CLAUSULA_PAID_TO[u]))}
-        ${rivalColumn("Verdugo", fullRivalList(CLAUSULA_PAID_BY[u]))}
-      </div>
-    </div>
-  `;
-}
-
-function onClausulaUserChange(u) {
-  clausulaSelectedUser = u;
-  document.getElementById("rival-detail").innerHTML = buildUserClausulaBlock(u);
-}
-
-function renderStatsClausulas(rows) {
-  const cazador = {};
-  const clausulado = {};
-  USERS.forEach(u => { cazador[u] = 0; clausulado[u] = 0; });
-  rows.forEach(r => {
-    if (r.Tipo === "Clausula compra" && !r.corregida) cazador[r.usuario] = (cazador[r.usuario] || 0) + 1;
-    if (r.Tipo === "Clausula venta") clausulado[r.usuario] = (clausulado[r.usuario] || 0) + 1;
-  });
-  CLAUSULA_CAZADOR = cazador;
-  CLAUSULA_CLAUSULADO = clausulado;
-
-  const paidTo = {};
-  const paidBy = {};
-  USERS.forEach(u => { paidTo[u] = {}; paidBy[u] = {}; });
-  rows.forEach(r => {
-    if (r.Tipo === "Clausula compra" && !r.corregida) {
-      paidTo[r.usuario][r.Vendedor] = (paidTo[r.usuario][r.Vendedor] || 0) + 1;
-      if (paidBy[r.Vendedor]) paidBy[r.Vendedor][r.usuario] = (paidBy[r.Vendedor][r.usuario] || 0) + 1;
-    }
-  });
-  CLAUSULA_PAID_TO = paidTo;
-  CLAUSULA_PAID_BY = paidBy;
-
-  const sorted = USERS.slice().sort((a, b) => (cazador[b] || 0) - (cazador[a] || 0));
-  if (!clausulaSelectedUser || !sorted.includes(clausulaSelectedUser)) {
-    clausulaSelectedUser = sorted[0] || null;
-  }
-
-  if (sorted.length === 0) {
-    return `<p class="hint">Todavia no hay usuarios registrados.</p>`;
-  }
-
-  const options = sorted.map(u =>
-    `<option value="${u}" ${u === clausulaSelectedUser ? "selected" : ""}>${u}</option>`
-  ).join("");
-
-  return `
-    <select class="rival-select" onchange="onClausulaUserChange(this.value)">${options}</select>
-    <div id="rival-detail">${buildUserClausulaBlock(clausulaSelectedUser)}</div>
-  `;
-}
-
 function renderStatsPatinazos(rows) {
   const patinazos = {};
   USERS.forEach(u => { patinazos[u] = 0; });
@@ -838,7 +741,7 @@ function renderStatsPatinazos(rows) {
   });
   const sorted = USERS.slice().sort((a, b) => (patinazos[b] || 0) - (patinazos[a] || 0));
   return rankingTable(
-    ["Usuario", "Recuento de Bububuup..."],
+    ["Usuario", "BUBUBUUP"],
     sorted.map(u => [u, patinazos[u] || 0])
   );
 }
