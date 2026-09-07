@@ -484,6 +484,10 @@ function renderTicker() {
 
 let summarySelectedWeek = null;
 
+function weekHadPatinazo(usuario, semana) {
+  return (USER_DATA[usuario] || []).some(r => r.Semana === semana && r.Tipo === "Patinazo");
+}
+
 function buildWeekDetail(weekLabel) {
   const row = SUMMARY_ROWS.find(r => r.Semana === weekLabel);
   if (!row) return `<p class="hint">Sin datos para esta semana.</p>`;
@@ -494,6 +498,7 @@ function buildWeekDetail(weekLabel) {
   const items = entries.map(([u, val]) => {
     let style = "color:var(--border)";
     if (val > 3) style = "background:var(--rose);color:#fff";
+    else if (weekHadPatinazo(u, weekLabel)) style = "background:var(--gold);color:#fff";
     else if (val > 0) style = "background:var(--pitch-light);color:#fff";
     return `
       <div class="week-row">
