@@ -269,6 +269,14 @@
   }
   .week-row:not(:last-child) { border-bottom: 1px solid var(--border); }
   .week-row .user-link { font-size: 14px; }
+  .user-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .user-nav .rival-select { margin-bottom: 0; flex: 1; }
+  .nav-arrow {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 40px; height: 40px; font-size: 16px; color: var(--ink); cursor: pointer;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  }
+  .nav-arrow:hover { background: var(--bg); }
   .rival-select {
     width: 100%; background: var(--surface); border: 1px solid var(--border);
     border-radius: 10px; padding: 10px 12px; font-family: 'Oswald', sans-serif;
@@ -787,9 +795,27 @@ function buildUserClausulaBlock(u) {
   `;
 }
 
+let clausulaSubTab = "general";
+let CLAUSULA_SORTED_USERS = [];
+
+function setClausulaSubTab(tab) {
+  clausulaSubTab = tab;
+  renderStats();
+}
+
+function shiftClausulaUser(delta) {
+  const list = CLAUSULA_SORTED_USERS;
+  if (!list || list.length === 0) return;
+  let idx = list.indexOf(clausulaSelectedUser);
+  if (idx === -1) idx = 0;
+  idx = (idx + delta + list.length) % list.length;
+  clausulaSelectedUser = list[idx];
+  renderStats();
+}
+
 function onClausulaUserChange(u) {
   clausulaSelectedUser = u;
-  document.getElementById("rival-detail").innerHTML = buildUserClausulaBlock(u);
+  renderStats();
 }
 
 function renderStatsClausulas(rows) {
@@ -816,20 +842,40 @@ function renderStatsClausulas(rows) {
   CLAUSULA_PAID_BY = paidBy;
 
   const sorted = USERS.slice().sort((a, b) => (cazador[b] || 0) - (cazador[a] || 0));
+  CLAUSULA_SORTED_USERS = sorted;
   if (!clausulaSelectedUser || !sorted.includes(clausulaSelectedUser)) {
     clausulaSelectedUser = sorted[0] || null;
   }
 
+  const subTabs = `
+    <div class="stats-tabs">
+      <button class="stats-tab ${clausulaSubTab === "general" ? "active" : ""}" onclick="setClausulaSubTab('general')">General</button>
+      <button class="stats-tab ${clausulaSubTab === "detallado" ? "active" : ""}" onclick="setClausulaSubTab('detallado')">Detallado</button>
+    </div>
+  `;
+
   if (sorted.length === 0) {
-    return `<p class="hint">Todavia no hay usuarios registrados.</p>`;
+    return subTabs + `<p class="hint">Todavia no hay usuarios registrados.</p>`;
+  }
+
+  if (clausulaSubTab === "general") {
+    const table = rankingTable(
+      ["Usuario", "Cazador", "Cazado"],
+      sorted.map(u => [u, cazador[u] || 0, cazado[u] || 0])
+    );
+    return subTabs + table;
   }
 
   const options = sorted.map(u =>
     `<option value="${u}" ${u === clausulaSelectedUser ? "selected" : ""}>${u}</option>`
   ).join("");
 
-  return `
-    <select class="rival-select" onchange="onClausulaUserChange(this.value)">${options}</select>
+  return subTabs + `
+    <div class="user-nav">
+      <button class="nav-arrow" onclick="shiftClausulaUser(-1)" aria-label="Anterior">&laquo;</button>
+      <select class="rival-select" onchange="onClausulaUserChange(this.value)">${options}</select>
+      <button class="nav-arrow" onclick="shiftClausulaUser(1)" aria-label="Siguiente">&raquo;</button>
+    </div>
     <div id="rival-detail">${buildUserClausulaBlock(clausulaSelectedUser)}</div>
   `;
 }
