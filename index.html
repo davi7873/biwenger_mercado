@@ -207,6 +207,7 @@
     .dossier-title { font-size: 20px; }
     .card { flex-wrap: wrap; padding: 12px; }
     .card-date { width: auto; }
+    .browser-tab { flex: 1; text-align: center; padding: 10px 8px; }
   }
   .user-link {
     background: none; border: none; cursor: pointer;
@@ -269,6 +270,28 @@
   }
   .week-row:not(:last-child) { border-bottom: 1px solid var(--border); }
   .week-row .user-link { font-size: 14px; }
+  .browser-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .browser-tab {
+    background: none;
+    border: none;
+    padding: 10px 22px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--ink-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .browser-tab.active {
+    color: var(--pitch);
+    border-bottom-color: var(--pitch);
+  }
+  .browser-tab:hover:not(.active) { color: var(--ink); }
   .user-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .user-nav .rival-select { margin-bottom: 0; flex: 1; }
   .nav-arrow {
@@ -848,9 +871,9 @@ function renderStatsClausulas(rows) {
   }
 
   const subTabs = `
-    <div class="stats-tabs">
-      <button class="stats-tab ${clausulaSubTab === "general" ? "active" : ""}" onclick="setClausulaSubTab('general')">General</button>
-      <button class="stats-tab ${clausulaSubTab === "detallado" ? "active" : ""}" onclick="setClausulaSubTab('detallado')">Detallado</button>
+    <div class="browser-tabs">
+      <button class="browser-tab ${clausulaSubTab === "general" ? "active" : ""}" onclick="setClausulaSubTab('general')">General</button>
+      <button class="browser-tab ${clausulaSubTab === "detallado" ? "active" : ""}" onclick="setClausulaSubTab('detallado')">Detallado</button>
     </div>
   `;
 
