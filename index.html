@@ -157,6 +157,15 @@
     box-shadow: 2px 0 0 rgba(227,167,46,0.4);
   }
 
+  #app-content {
+    transition: opacity 0.16s ease, transform 0.16s ease;
+    opacity: 1;
+    transform: scale(1);
+  }
+  #app-content.screen-fade {
+    opacity: 0;
+    transform: scale(0.97);
+  }
   .app-root {
     flex: 1;
     min-height: 0;
@@ -422,6 +431,16 @@
 const SHEET_ID = "1ir6uoalP7nLft8QX9776SuXW1yqGVw_CaUchFMLjdXc";
 
 let USERS = [];
+
+function transitionTo(applyFn) {
+  const root = document.getElementById("app-content");
+  root.classList.add("screen-fade");
+  setTimeout(() => {
+    applyFn();
+    document.getElementById("app-content").classList.remove("screen-fade");
+  }, 160);
+}
+
 let SUMMARY_ROWS = [];
 let USER_DATA = {}; // { nombre: filas[] }
 let selectedUser = null;
@@ -578,6 +597,10 @@ function onSummaryWeekChange(w) {
 }
 
 function renderSummary() {
+  transitionTo(renderSummaryImmediate);
+}
+
+function renderSummaryImmediate() {
   selectedUser = null;
   renderNav("__resumen__");
   const root = document.getElementById("app-content");
@@ -664,6 +687,10 @@ function renderDossierList() {
 }
 
 function renderDossier(username) {
+  transitionTo(() => renderDossierImmediate(username));
+}
+
+function renderDossierImmediate(username) {
   selectedUser = username;
   dossierFilter = "todos";
   renderNav(username);
@@ -737,6 +764,10 @@ function setStatsTab(key) {
 }
 
 function renderStats() {
+  transitionTo(renderStatsImmediate);
+}
+
+function renderStatsImmediate() {
   const root = document.getElementById("app-content");
   const rows = allRows();
 
