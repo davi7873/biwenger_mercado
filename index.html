@@ -56,7 +56,10 @@
   .font-mono { font-family: 'JetBrains Mono', monospace; }
 
   .masthead {
-    background: var(--pitch);
+    background:
+      linear-gradient(rgba(8,18,13,0.45), rgba(8,18,13,0.45)),
+      url('fondonuevo.jpg') no-repeat center center / cover,
+      var(--pitch);
     padding: 16px 24px;
     display: flex;
     align-items: center;
@@ -64,10 +67,10 @@
     flex-shrink: 0;
   }
   .masthead-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .app-logo { width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0; display: block; }
+  .app-logo { width: 50px; height: 50px; border-radius: 10px; flex-shrink: 0; display: block; }
   .title-row { display: flex; align-items: center; gap: 8px; }
-  .masthead h1 { color: #fff; font-size: 20px; margin: 0; letter-spacing: 0.5px; }
-  .masthead p { color: #BFE0CC; font-size: 12px; margin: 4px 0 0; }
+  .masthead h1 { color: #fff; font-size: 20px; margin: 0; letter-spacing: 0.5px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+  .masthead p { color: #BFE0CC; font-size: 12px; margin: 4px 0 0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
   .info-btn {
     width: 20px; height: 20px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,0.55); background: transparent; color: #fff;
