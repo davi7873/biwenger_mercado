@@ -485,8 +485,17 @@ async function loadAll() {
       }
     }));
 
-    document.getElementById("last-updated").textContent =
-      "Actualizado " + new Date().toLocaleTimeString("es-ES");
+    let lastRunText = "Actualizado (sin datos)";
+    try {
+      const meta = await fetchCsv("Meta");
+      const row = meta.data.find(r => r.Campo === "UltimaActualizacion");
+      if (row && row.Valor) {
+        lastRunText = "Actualizado " + row.Valor;
+      }
+    } catch (e) {
+      // Si la pestana Meta aun no existe (primera vez), no pasa nada.
+    }
+    document.getElementById("last-updated").textContent = lastRunText;
 
     renderTicker();
     renderNav(selectedUser || "__resumen__");
