@@ -304,19 +304,37 @@
   }
   .browser-tab:hover:not(.active) { color: var(--ink); }
   .user-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .user-nav .rival-select { margin-bottom: 0; flex: 1; }
+  .custom-select { position: relative; margin-bottom: 10px; }
+  .custom-select-trigger {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 12px; font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 14px;
+    color: var(--ink); cursor: pointer;
+  }
+  .custom-select-trigger:hover { border-color: var(--pitch); }
+  .custom-select-chevron { color: var(--ink-muted); flex-shrink: 0; transition: transform 0.15s ease; }
+  .custom-select.open .custom-select-chevron { transform: rotate(180deg); }
+  .custom-select-panel {
+    position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.18); max-height: 260px; overflow-y: auto;
+  }
+  .custom-select-option {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 12px 14px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px;
+    color: var(--ink); cursor: pointer;
+  }
+  .custom-select-option:not(:last-child) { border-bottom: 1px solid var(--border); }
+  .custom-select-option.active { color: var(--pitch); font-weight: 700; background: var(--bg); }
+  .custom-select-option:hover:not(.active) { background: var(--bg); }
+
+  .user-nav .custom-select { margin-bottom: 0; flex: 1; }
   .nav-arrow {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
     width: 40px; height: 40px; font-size: 16px; color: var(--ink); cursor: pointer;
     flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   }
   .nav-arrow:hover { background: var(--bg); }
-  .rival-select {
-    width: 100%; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 12px; font-family: 'Oswald', sans-serif;
-    font-weight: 600; font-size: 14px; color: var(--ink); margin-bottom: 10px;
-    -webkit-appearance: none; appearance: none;
-  }
   .rival-block {
     background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
     padding: 14px 16px; margin-bottom: 10px;
@@ -431,6 +449,53 @@
 const SHEET_ID = "1ir6uoalP7nLft8QX9776SuXW1yqGVw_CaUchFMLjdXc";
 
 let USERS = [];
+
+function buildCustomSelect(id, options, selected, onSelectFnName) {
+  const opts = options.map(o => `
+    <button type="button" class="custom-select-option ${o === selected ? "active" : ""}"
+      onclick="selectCustomOption('${id}', '${o.replace(/'/g, "\\'")}', '${onSelectFnName}')">${o}</button>
+  `).join("");
+  return `
+    <div class="custom-select" id="${id}">
+      <button type="button" class="custom-select-trigger" onclick="toggleCustomSelect('${id}')">
+        <span class="custom-select-value">${selected}</span>
+        <svg class="custom-select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="custom-select-panel" style="display:none;">${opts}</div>
+    </div>
+  `;
+}
+
+function toggleCustomSelect(id) {
+  document.querySelectorAll(".custom-select").forEach(cs => {
+    if (cs.id !== id) { cs.classList.remove("open"); cs.querySelector(".custom-select-panel").style.display = "none"; }
+  });
+  const el = document.getElementById(id);
+  const panel = el.querySelector(".custom-select-panel");
+  const isOpen = panel.style.display === "block";
+  panel.style.display = isOpen ? "none" : "block";
+  el.classList.toggle("open", !isOpen);
+}
+
+function selectCustomOption(id, value, onSelectFnName) {
+  const el = document.getElementById(id);
+  el.querySelector(".custom-select-panel").style.display = "none";
+  el.classList.remove("open");
+  window[onSelectFnName](value);
+}
+
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".custom-select").forEach(cs => {
+    if (!cs.contains(e.target)) {
+      cs.classList.remove("open");
+      const panel = cs.querySelector(".custom-select-panel");
+      if (panel) panel.style.display = "none";
+    }
+  });
+});
+
 
 function transitionTo(applyFn) {
   const root = document.getElementById("app-content");
@@ -615,13 +680,9 @@ function renderSummaryImmediate() {
     summarySelectedWeek = weeks[0];
   }
 
-  const options = weeks.map(w =>
-    `<option value="${w}" ${w === summarySelectedWeek ? "selected" : ""}>${w}</option>`
-  ).join("");
-
   root.innerHTML = `
     <div class="container">
-      <select class="rival-select" onchange="onSummaryWeekChange(this.value)">${options}</select>
+      ${buildCustomSelect("week-select", weeks, summarySelectedWeek, "onSummaryWeekChange")}
       <div id="week-detail">${buildWeekDetail(summarySelectedWeek)}</div>
     </div>
   `;
@@ -958,14 +1019,10 @@ function renderStatsClausulas(rows) {
     return subTabs + table;
   }
 
-  const options = sorted.map(u =>
-    `<option value="${u}" ${u === clausulaSelectedUser ? "selected" : ""}>${u}</option>`
-  ).join("");
-
   return subTabs + `
     <div class="user-nav">
       <button class="nav-arrow" onclick="shiftClausulaUser(-1)" aria-label="Anterior">&laquo;</button>
-      <select class="rival-select" onchange="onClausulaUserChange(this.value)">${options}</select>
+      ${buildCustomSelect("clausula-user-select", sorted, clausulaSelectedUser, "onClausulaUserChange")}
       <button class="nav-arrow" onclick="shiftClausulaUser(1)" aria-label="Siguiente">&raquo;</button>
     </div>
     <div id="rival-detail">${buildUserClausulaBlock(clausulaSelectedUser)}</div>
