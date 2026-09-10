@@ -1072,7 +1072,7 @@ function renderStatsInactividad(rows) {
     }
     const lastDate = new Date(lastSeen[u].replace(" ", "T"));
     const days = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-    return { usuario: u, days, label: `${days} dia${days === 1 ? "" : "s"} sin moverse` };
+    return { usuario: u, days, label: `${days} dia${days === 1 ? "" : "s"}` };
   });
   entries.sort((a, b) => b.days - a.days);
   return rankingTable(
