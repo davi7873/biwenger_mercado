@@ -127,14 +127,18 @@
   .ticker-item b { color: var(--gold); }
   .ticker-item strong { color: #fff; }
 
+  .custom-select-panel.panel-up { top: auto; bottom: calc(100% + 6px); }
+  .nav-user-select { position: relative; }
+  .nav-user-select .nav-tab { display: flex; align-items: center; gap: 6px; }
+  .nav-user-chevron { transition: transform 0.15s ease; flex-shrink: 0; }
+  .nav-user-select.open .nav-user-chevron { transform: rotate(180deg); }
+
   .nav-wrap {
     background: #0F2E1E;
     padding: 0 16px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 0);
     display: flex;
     gap: 4px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     flex-shrink: 0;
     box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
   }
@@ -606,10 +610,28 @@ function renderNav(activeKey) {
   const nav = document.getElementById("nav-wrap");
   if (USERS.length === 0) { nav.style.display = "none"; return; }
   nav.style.display = "flex";
+
+  const isUserActive = USERS.includes(activeKey);
+  const triggerLabel = isUserActive ? activeKey : "Ver datos de usuario";
+
   let html = `<button class="nav-tab nav-tab-resumen ${activeKey === "__resumen__" ? "active" : ""}" onclick="renderSummary()">Resumen</button>`;
-  USERS.forEach(u => {
-    html += `<button class="nav-tab ${activeKey === u ? "active" : ""}" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button>`;
-  });
+
+  const options = USERS.map(u => `
+    <button type="button" class="custom-select-option ${u === activeKey ? "active" : ""}"
+      onclick="selectCustomOption('nav-user-select', '${u.replace(/'/g, "\\'")}', 'renderDossier')">${u}</button>
+  `).join("");
+
+  html += `
+    <div class="custom-select nav-user-select" id="nav-user-select">
+      <button type="button" class="nav-tab ${isUserActive ? "active" : ""}" onclick="toggleCustomSelect('nav-user-select')">
+        ${triggerLabel}
+        <svg class="nav-user-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+      <div class="custom-select-panel panel-up" style="display:none;">${options}</div>
+    </div>
+  `;
   nav.innerHTML = html;
 }
 
