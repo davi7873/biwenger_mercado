@@ -373,6 +373,11 @@
   }
   .rank-row:not(:last-child) { border-bottom: 1px solid var(--border); }
   .rank-name { font-size: 14px; color: var(--ink); flex: 1; min-width: 0; }
+  .rank-name-link {
+    background: none; border: none; text-align: left; font-family: 'Inter', system-ui, sans-serif;
+    cursor: pointer; color: var(--pitch); font-weight: 600; padding: 0;
+  }
+  .rank-name-link:hover { text-decoration: underline; }
   .rank-values { display: flex; gap: 14px; flex-shrink: 0; }
   .rank-value { display: flex; flex-direction: column; align-items: center; min-width: 38px; }
   .rank-value-label {
@@ -858,10 +863,13 @@ function statRow(label, value) {
   return `<div class="stat-row"><span>${label}</span><strong>${value}</strong></div>`;
 }
 
-function rankingTable(headers, dataRows) {
+function rankingTable(headers, dataRows, onNameClick) {
   const valueHeaders = headers.slice(1);
   const rows = dataRows.map(cols => {
     const name = cols[0];
+    const nameHtml = onNameClick
+      ? `<button type="button" class="rank-name rank-name-link" onclick="${onNameClick}('${name.replace(/'/g, "\\'")}')">${name}</button>`
+      : `<span class="rank-name">${name}</span>`;
     const values = cols.slice(1).map((v, i) => `
       <div class="rank-value">
         <span class="rank-value-label">${valueHeaders[i]}</span>
@@ -870,7 +878,7 @@ function rankingTable(headers, dataRows) {
     `).join("");
     return `
       <div class="rank-row">
-        <span class="rank-name">${name}</span>
+        ${nameHtml}
         <div class="rank-values">${values}</div>
       </div>
     `;
@@ -956,6 +964,12 @@ function setClausulaSubTab(tab) {
   renderStats();
 }
 
+function goToClausulaDetail(u) {
+  clausulaSelectedUser = u;
+  clausulaSubTab = "detallado";
+  renderStats();
+}
+
 function shiftClausulaUser(delta) {
   const list = CLAUSULA_SORTED_USERS;
   if (!list || list.length === 0) return;
@@ -1014,7 +1028,8 @@ function renderStatsClausulas(rows) {
   if (clausulaSubTab === "general") {
     const table = rankingTable(
       ["Usuario", "Cazador", "Cazado"],
-      sorted.map(u => [u, cazador[u] || 0, cazado[u] || 0])
+      sorted.map(u => [u, cazador[u] || 0, cazado[u] || 0]),
+      "goToClausulaDetail"
     );
     return subTabs + table;
   }
