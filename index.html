@@ -514,6 +514,7 @@ function transitionTo(applyFn) {
 let SUMMARY_ROWS = [];
 let USER_DATA = {}; // { nombre: filas[] }
 let selectedUser = null;
+let currentScreen = "resumen"; // "resumen" | "dossier" | "stats"
 
 function sheetCsvUrl(sheetName) {
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -589,8 +590,9 @@ async function loadAll() {
     document.getElementById("last-updated").textContent = lastRunText;
 
     renderTicker();
-    renderNav(selectedUser || "__resumen__");
-    if (selectedUser) {
+    if (currentScreen === "stats") {
+      openStats();
+    } else if (currentScreen === "dossier" && selectedUser) {
       renderDossier(selectedUser);
     } else {
       renderSummary();
@@ -672,6 +674,7 @@ function renderSummary() {
 
 function renderSummaryImmediate() {
   selectedUser = null;
+  currentScreen = "resumen";
   renderNav("__resumen__");
   const root = document.getElementById("app-content");
 
@@ -758,6 +761,7 @@ function renderDossier(username) {
 
 function renderDossierImmediate(username) {
   selectedUser = username;
+  currentScreen = "dossier";
   dossierFilter = "todos";
   renderNav(username);
 
@@ -815,6 +819,7 @@ function markCorrectedAcquisitions(rows) {
 
 function openStats() {
   selectedUser = null;
+  currentScreen = "stats";
   renderNav("__stats__");
   renderStats();
 }
@@ -1072,7 +1077,7 @@ function renderStatsInactividad(rows) {
     }
     const lastDate = new Date(lastSeen[u].replace(" ", "T"));
     const days = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
-    return { usuario: u, days, label: `${days} dia${days === 1 ? "" : "s"}` };
+    return { usuario: u, days, label: `${days} dia${days === 1 ? "" : "s"} sin moverse` };
   });
   entries.sort((a, b) => b.days - a.days);
   return rankingTable(
