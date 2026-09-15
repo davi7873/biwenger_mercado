@@ -541,6 +541,7 @@ function typeBadgeHtml(tipo) {
     "Clausula compra": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula C." },
     "Clausula venta": { bg: "var(--gold-bg)", text: "var(--gold-text)", label: "Clausula V." },
     Patinazo: { bg: "#E9EBEA", text: "#1a1a1a", label: "Patinazo" },
+    Devolucion: { bg: "#DCEAF7", text: "#1B5A8A", label: "Devolucion" },
   };
   const conf = map[tipo] || { bg: "#EEE", text: "#555", label: tipo || "-" };
   return `<span class="badge" style="background:${conf.bg};color:${conf.text}">${conf.label}</span>`;
