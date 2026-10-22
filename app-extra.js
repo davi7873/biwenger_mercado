@@ -59,9 +59,10 @@ function periodStartString() {
 
 function periodBarHtml() {
   const chip = (k, l) =>
-    `<button class="stats-tab ${statsPeriod.key === k ? "active" : ""}" onclick="setPeriod('${k}')">${l}</button>`;
-  let html = `<div class="stats-tabs period-tabs">
-    ${chip("todo", "Todo")}${chip("mes", "Ultimo mes")}${chip("semana", "Esta semana")}${chip("desde", "Desde semana...")}
+    `<button type="button" class="${statsPeriod.key === k ? "active" : ""}" onclick="setPeriod('${k}')">${l}</button>`;
+  let html = `<p class="period-label">Periodo</p>
+  <div class="period-seg">
+    ${chip("todo", "Todo")}${chip("mes", "Ultimo mes")}${chip("semana", "Esta semana")}${chip("desde", "Desde...")}
   </div>`;
   if (statsPeriod.key === "desde") {
     const weeks = SUMMARY_ROWS.map(r => r.Semana);
