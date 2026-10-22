@@ -1020,10 +1020,8 @@ function renderStatsClausulas(rows) {
   USERS.forEach(u => { cazador[u] = 0; cazado[u] = 0; });
   rows.forEach(r => {
     if (r.Tipo === "Clausula compra" && !r.corregida) cazador[r.usuario] = (cazador[r.usuario] || 0) + 1;
-    if (r.Tipo === "Clausula venta") cazado[r.usuario] = (cazado[r.usuario] || 0) + 1;
   });
   CLAUSULA_CAZADOR = cazador;
-  CLAUSULA_CLAUSULADO = cazado;
 
   const paidTo = {};
   const paidBy = {};
@@ -1036,6 +1034,13 @@ function renderStatsClausulas(rows) {
   });
   CLAUSULA_PAID_TO = paidTo;
   CLAUSULA_PAID_BY = paidBy;
+  // "Cazado" se calcula a partir de las clausulas de compra vigentes (las mismas
+  // que alimentan la lista Verdugo), para que ambos numeros siempre cuadren y
+  // no se cuenten clausulas que luego se corrigieron con un Patinazo.
+  USERS.forEach(u => {
+    cazado[u] = Object.values(paidBy[u] || {}).reduce((t, n) => t + n, 0);
+  });
+  CLAUSULA_CLAUSULADO = cazado;
 
   const sorted = USERS.slice().sort((a, b) => (cazador[b] || 0) - (cazador[a] || 0));
   CLAUSULA_SORTED_USERS = sorted;
