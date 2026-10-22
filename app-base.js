@@ -2,7 +2,7 @@
 // CONFIGURACION: pon aqui el ID de tu Google Sheet
 // ============================================================
 const SHEET_ID = "1ir6uoalP7nLft8QX9776SuXW1yqGVw_CaUchFMLjdXc";
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 
 let USERS = [];
 
