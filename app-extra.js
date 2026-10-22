@@ -267,32 +267,59 @@ function nativeShare() {
 }
 
 // ---------- Grafico de actividad (ficha de usuario) ----------
+// Cada barra es pulsable: muestra compras (C), ventas (V) y patinazos (P) de esa semana.
+// C = Compra + Clausula compra + Devolucion; V = Venta + Clausula venta; P = Patinazo.
+// Las compras corregidas por un patinazo no se cuentan (igual que en el resto de la app).
+let ACTIVITY_INFO = [];
+const ACTIVITY_HELP = "Toca una barra: C = compras, V = ventas, P = patinazos. Barra ambar = semana con patinazo.";
+
 function activityChartHtml(user) {
   const weeks = SUMMARY_ROWS.map(r => r.Semana).slice(0, 12).reverse();
   if (weeks.length === 0) return "";
   const rows = allRowsRaw().filter(r => r.usuario === user && !r.corregida);
-  const counts = weeks.map(w => rows.filter(r => r.Semana === w).length);
-  const max = Math.max(1, ...counts);
+  ACTIVITY_INFO = weeks.map(w => {
+    const wr = rows.filter(r => r.Semana === w);
+    const c = wr.filter(r => r.Tipo === "Compra" || r.Tipo === "Clausula compra" || r.Tipo === "Devolucion").length;
+    const v = wr.filter(r => r.Tipo === "Venta" || r.Tipo === "Clausula venta").length;
+    const p = wr.filter(r => r.Tipo === "Patinazo").length;
+    return { semana: w, c, v, p, total: c + v + p };
+  });
+  const max = Math.max(1, ...ACTIVITY_INFO.map(a => a.total));
   const W = 300, H = 112, top = 16, bottom = 18;
   const bw = W / weeks.length;
-  const bars = weeks.map((w, i) => {
-    const c = counts[i];
+  const bars = ACTIVITY_INFO.map((a, i) => {
+    const c = a.total;
     const h = c === 0 ? 2 : Math.max(3, Math.round((c / max) * (H - top - bottom)));
     const x = (i * bw + bw * 0.18).toFixed(1);
     const width = (bw * 0.64).toFixed(1);
     const y = H - bottom - h;
-    const cls = c === 0 ? "bar-zero" : (weekHadPatinazo(user, w) ? "bar-pat" : "bar");
-    const num = (String(w).match(/Semana\s+(\d+)/) || [])[1] || "";
+    const cls = c === 0 ? "bar-zero" : (weekHadPatinazo(user, a.semana) ? "bar-pat" : "bar");
+    const num = (String(a.semana).match(/Semana\s+(\d+)/) || [])[1] || "";
     const cx = (i * bw + bw / 2).toFixed(1);
-    return `<rect class="${cls}" x="${x}" y="${y}" width="${width}" height="${h}" rx="2"></rect>` +
+    return `<g class="bar-hit" onclick="showBarInfo(${i})">` +
+      `<rect x="${(i * bw).toFixed(1)}" y="0" width="${bw.toFixed(1)}" height="${H}" fill="transparent"></rect>` +
+      `<rect class="bar-vis ${cls}" x="${x}" y="${y}" width="${width}" height="${h}" rx="2"></rect>` +
       (c > 0 ? `<text class="val" x="${cx}" y="${y - 3}" text-anchor="middle">${c}</text>` : "") +
-      `<text x="${cx}" y="${H - 5}" text-anchor="middle">S${num}</text>`;
+      `<text x="${cx}" y="${H - 5}" text-anchor="middle">S${num}</text></g>`;
   }).join("");
   return `
     <div class="chart-card">
       <p class="chart-title">Movimientos por semana</p>
       <svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Movimientos por semana">${bars}</svg>
+      <p class="chart-info" id="chart-info">${ACTIVITY_HELP}</p>
     </div>`;
+}
+
+function showBarInfo(i) {
+  const a = ACTIVITY_INFO[i];
+  const box = document.getElementById("chart-info");
+  if (!a || !box) return;
+  document.querySelectorAll(".chart-svg .bar-hit").forEach((g, k) => g.classList.toggle("sel", k === i));
+  const range = (String(a.semana).match(/\[(.*?)\]/) || [])[1];
+  const num = (String(a.semana).match(/Semana\s+(\d+)/) || [])[1];
+  const nums = `<b>${a.c}C ${a.v}V${a.p ? " " + a.p + "P" : ""}</b>`;
+  box.innerHTML = `Semana ${num || ""}${range ? " (" + escapeHtml(range) + ")" : ""}: ${nums}` +
+    (a.total === 0 ? " · sin movimientos" : "");
 }
 
 // ---------- Tirar hacia abajo para actualizar ----------
