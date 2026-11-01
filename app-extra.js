@@ -322,6 +322,48 @@ function showBarInfo(i) {
     (a.total === 0 ? " · sin movimientos" : "");
 }
 
+// ---------- Pantalla de Ajustes (solo lectura) ----------
+// Los valores salen de la pestana "Ajustes" de la hoja. Solo se pueden cambiar
+// editandola en Google Sheets; aqui se muestran para quien tenga dudas.
+function openSettings() {
+  selectedUser = null;
+  currentScreen = "ajustes";
+  renderNav("__ajustes__");
+  transitionTo(renderSettingsImmediate);
+}
+
+function renderSettingsImmediate() {
+  const dias = n => `${n} dia${Number(n) === 1 ? "" : "s"}`;
+  const diasMercado = parseInt(SETTINGS.DiasTenenciaMercado, 10) || 10;
+  const diasManager = parseInt(SETTINGS.DiasTenenciaManager, 10) || 10;
+  const maxC = maxCompras();
+  const maxV = parseInt(SETTINGS.MaxVentasSemana, 10);
+  const maxVtxt = maxV > 0 ? String(maxV) : "Sin limite";
+  const mismos = diasMercado === diasManager;
+
+  const regla = (titulo, texto) => `<div class="rule-item"><b>${titulo}</b>${texto}</div>`;
+  document.getElementById("app-content").innerHTML = `
+    <div class="container">
+      <h2 class="font-display dossier-title">Ajustes</h2>
+      <p class="settings-note">Reglas de la liga que usa la app. Las fija el administrador y no se pueden cambiar desde aqui.</p>
+      <div class="stats-card" style="margin-bottom:16px;">
+        ${statRow(mismos ? "Dias minimos antes de vender" : "Dias minimos (comprado al mercado)", dias(diasMercado))}
+        ${mismos ? "" : statRow("Dias minimos (comprado a un manager)", dias(diasManager))}
+        ${statRow("Maximo de fichajes por semana", maxC)}
+        ${statRow("Maximo de ventas por semana", maxVtxt)}
+      </div>
+      <p class="stats-subtitle">Como funcionan las reglas</p>
+      <div class="rule-card">
+        ${regla("Tenencia minima", `Un jugador no se puede vender hasta que pasan los dias indicados desde que se ficho. Los dias se cuentan por fecha, sin tener en cuenta la hora.`)}
+        ${regla("Fichajes por semana", `Cada semana (de lunes a domingo) cuentan las compras y los clausulazos. Pasar de ${maxC} es patinazo.`)}
+        ${regla("Patinazo", `Cuando el admin corrige un fichaje que no cumple las reglas devolviendo el jugador al mercado, la venta se marca como Patinazo y el fichaje corregido deja de contar.`)}
+        ${regla("Devolucion", `Si un jugador vuelve a su dueno anterior porque otro manager hizo un patinazo con el, se marca como Devolucion y no cuenta como fichaje.`)}
+        ${regla("Clausulazos", `Cuentan como fichaje para quien clausula y como "Cazado" para quien lo sufre.`)}
+      </div>
+      <p class="settings-note">Para cambiar estos valores, el administrador edita la pestana "Ajustes" de la hoja de Google.</p>
+    </div>`;
+}
+
 // ---------- Tirar hacia abajo para actualizar ----------
 (function setupPullToRefresh() {
   const appRoot = document.getElementById("app-root");
