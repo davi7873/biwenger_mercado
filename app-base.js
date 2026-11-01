@@ -2,9 +2,17 @@
 // CONFIGURACION: pon aqui el ID de tu Google Sheet
 // ============================================================
 const SHEET_ID = "1ir6uoalP7nLft8QX9776SuXW1yqGVw_CaUchFMLjdXc";
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 
 let USERS = [];
+
+// Ajustes de la liga (pestana "Ajustes" de la hoja; solo lectura en la app)
+const DEFAULT_APP_SETTINGS = { DiasTenenciaMercado: "10", DiasTenenciaManager: "10", MaxComprasSemana: "3", MaxVentasSemana: "" };
+let SETTINGS = { ...DEFAULT_APP_SETTINGS };
+function maxCompras() {
+  const n = parseInt(SETTINGS.MaxComprasSemana, 10);
+  return n > 0 ? n : 3;
+}
 
 function buildCustomSelect(id, options, selected, onSelectFnName) {
   const opts = options.map(o => `
@@ -71,7 +79,7 @@ function transitionTo(applyFn) {
 let SUMMARY_ROWS = [];
 let USER_DATA = {}; // { nombre: filas[] }
 let selectedUser = null;
-let currentScreen = "resumen"; // "resumen" | "dossier" | "stats"
+let currentScreen = "resumen"; // "resumen" | "dossier" | "stats" | "ajustes"
 
 function sheetCsvUrl(sheetName) {
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
@@ -184,8 +192,20 @@ async function loadAll() {
       lastEl.classList.remove("offline-note");
     }
 
+    SETTINGS = { ...DEFAULT_APP_SETTINGS };
+    try {
+      const ajustes = await fetchCsv("Ajustes");
+      ajustes.data.forEach(r => {
+        if (r && r.Campo && (r.Campo.trim() in DEFAULT_APP_SETTINGS)) SETTINGS[r.Campo.trim()] = String(r.Valor || "").trim();
+      });
+    } catch (e) {
+      // Si la pestana Ajustes aun no existe, se usan los valores por defecto.
+    }
+
     renderTicker();
-    if (currentScreen === "stats") {
+    if (currentScreen === "ajustes") {
+      openSettings();
+    } else if (currentScreen === "stats") {
       openStats();
     } else if (currentScreen === "dossier" && selectedUser) {
       renderDossier(selectedUser);
@@ -262,16 +282,17 @@ function buildWeekDetail(weekLabel) {
   entries.sort((a, b) => b[1] - a[1]);
 
   const esActual = isCurrentWeekLabel(weekLabel);
+  const MAX = maxCompras();
   const items = entries.map(([u, val]) => {
     let style = "color:var(--border)";
     let cls = "count-pill";
     let texto = String(val);
-    if (val > 3) style = "background:var(--rose);color:#fff";
+    if (val > MAX) style = "background:var(--rose);color:#fff";
     else if (weekHadPatinazo(u, weekLabel)) style = "background:var(--gold);color:#fff";
-    else if (val === 3 && esActual) { style = ""; cls += " pill-limit"; }
+    else if (val === MAX && esActual) { style = ""; cls += " pill-limit"; }
     else if (val > 0) style = "background:var(--pitch-light);color:#fff";
     // En la semana en curso se muestra cuantos fichajes lleva sobre el maximo de 3
-    if (esActual) { cls += " count-pill-wide"; texto = val + "/3"; }
+    if (esActual) { cls += " count-pill-wide"; texto = val + "/" + MAX; }
     return `
       <div class="week-row">
         <button class="user-link" onclick="renderDossier('${u.replace(/'/g, "\\'")}')">${u}</button>
